@@ -1,0 +1,40 @@
+(kicad_sch
+	(version 20231120)
+	(generator "eeschema")
+	(generator_version "8.0")
+	(uuid "62504db6-7d57-4226-a69c-802abd89335e")
+	(paper "A4")
+	(lib_symbols)
+	(text "NOTE:\nPlacer 1 condensateur céramique de 100nF près du V+ de chaque IC.\nPlacer 3 condensateurs électrolytique de 10µF/25V sur les rails \nd'alimentation de chaque côté de chaque carte. 1 à chaque extrémité\net un au centre.\n"
+		(exclude_from_sim no)
+		(at 46.736 67.564 0)
+		(effects
+			(font
+				(size 1.778 1.778)
+			)
+			(justify left)
+		)
+		(uuid "82a287a0-c7dd-44e5-8db6-d950f5699ca8")
+	)
+	(text "POMME 1.5\n"
+		(exclude_from_sim no)
+		(at 178.562 174.752 0)
+		(effects
+			(font
+				(size 3.81 3.81)
+			)
+			(justify left)
+		)
+		(uuid "b18f5d8c-269f-4bea-9d61-6b97e16340d2")
+	)
+	(text "ALIMENTATION"
+		(exclude_from_sim no)
+		(at 193.548 189.992 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "d7afed7b-145f-42dc-baf5-08e2f37f34cf")
+	)
+)
