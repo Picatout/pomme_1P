@@ -1,0 +1,209 @@
+ca65 V2.18 - Ubuntu 2.19-1
+Main file   : p1pMon.s
+Current file: p1pMon.s
+
+000000r 1               ;----------------------------
+000000r 1               ; Wozmon adapté au pomme-1.5
+000000r 1               ;----------------------------
+000000r 1               
+000000r 1               	.PC02
+000000r 1               
+000000r 1               
+000000r 1               	ACIA_DATA = $D000
+000000r 1               	ACIA_STATUS = $D001
+000000r 1               	ACIA_CMD = $D002
+000000r 1               	ACIA_CR = $D003
+000000r 1               
+000000r 1               	; variables
+000000r 1               	XAML = 4
+000000r 1               	XAMH = 5
+000000r 1               	STL  = 6
+000000r 1               	STH  = 7
+000000r 1               	L    = 8
+000000r 1               	H    = 9
+000000r 1               	YSAV = $A
+000000r 1               	MODE = $B
+000000r 1               	IN   = $200
+000000r 1               
+000000r 1               	; ASCII constant
+000000r 1               	CTRL_C = 3
+000000r 1               	CR = 13
+000000r 1               	BS = 8
+000000r 1               	ESC = 27
+000000r 1               	SPACE = 32
+000000r 1               	BSLASH = $5C
+000000r 1               	DOT = $2E
+000000r 1               	COLUMN = $3A
+000000r 1               	LETTER_F = $46
+000000r 1               	LETTER_R = $52
+000000r 1               
+000000r 1               	.segment "WOZMON"
+000000r 1               	.org $FE00
+00FE00  1               
+00FE00  1               .PROC RESET
+00FE00  1  D8           	CLD   ; clear decimal mode
+00FE01  1  58           	CLI   ; disable interrupts, not used
+00FE02  1               ; SETUP ACIA FOR 115200 BAUD,8N1
+00FE02  1  A9 03        	LDA #3         ; DTR ready, no IRQ
+00FE04  1  8D 02 D0     	STA ACIA_CMD   ;
+00FE07  1  A0 FE        	LDY #$FE       ; initialize Y to -2
+00FE09  1               NOTCR:             ; character input loop
+00FE09  1  C9 08        	CMP #BS        ; backspace ?
+00FE0B  1  F0 13        	BEQ BACKSPACE  ; yes then cursor left
+00FE0D  1  C9 1B        	CMP #ESC       ; ESCAPE?
+00FE0F  1  F0 03        	BEQ ESCAPE
+00FE11  1  C8           	INY            ; inc Y to accept next character in buffer
+00FE12  1  10 12        	BPL NEXTCHAR
+00FE14  1               ESCAPE:            ; display '\' character
+00FE14  1  A9 5C        	LDA #BSLASH
+00FE16  1  20 EE FE     	JSR ECHO
+00FE19  1               GETLINE:           ; readline loop
+00FE19  1  A9 0D        	LDA #CR        ; move terminal cursor
+00FE1B  1  20 EE FE     	JSR ECHO       ; to start of next line
+00FE1E  1  A0 01        	LDY #1         ; iniatilize Y to input buffer+1
+00FE20  1               BACKSPACE:
+00FE20  1  88           	DEY            ; cursor left
+00FE21  1  30 F6        	BMI GETLINE    ; if back space empty line then start new line
+00FE23  1  20 EE FE     	JSR ECHO       ; else move display cursor left.
+00FE26  1               NEXTCHAR:          ; get next character
+00FE26  1  AD 01 D0     	LDA ACIA_STATUS ; wait loop until status bit "character received" set.
+00FE29  1  29 08        	AND #8         ; bit 3 is RX bit in ACIA status register.
+00FE2B  1  F0 F9        	BEQ NEXTCHAR   ; no character received yet.
+00FE2D  1  AD 00 D0     	LDA ACIA_DATA  ; read character from ACIA
+00FE30  1  99 00 02     	STA IN,Y       ; store it un buffer
+00FE33  1  20 EE FE     	JSR ECHO       ; echo it to terminal
+00FE36  1  C9 0D        	CMP #CR        ; Carriage return ?
+00FE38  1  D0 CF        	BNE NOTCR 	   ; not end of line then test character
+00FE3A  1  A0 FF        	LDY #$FF       ; end of line
+00FE3C  1  A9 00        	LDA #0         ; prepare for line parsing
+00FE3E  1  AA           	TAX            ; X=0
+00FE3F  1               SETSTOR:
+00FE3F  1  0A           	ASL            ; multiply A by 2
+00FE40  1               SETMODE:           ; set operation MODE
+00FE40  1  85 0B        	STA MODE       ; 0 = XAM, $74 = STOR, $2E=BLOKXAM
+00FE42  1               BLSKIP:
+00FE42  1  C8           	INY            ; move Y index to next buffer character
+00FE43  1               NEXTITEM:          ; parse next token
+00FE43  1  B9 00 02     	LDA IN,Y
+00FE46  1  C9 0D        	CMP #CR        ; if carriage return parsing done
+00FE48  1  F0 CF        	BEQ GETLINE    ; accept next input
+00FE4A  1  C9 2E        	CMP #DOT       ; check for MODE character
+00FE4C  1  90 F4        	BCC BLSKIP     ;  if char < '.' char invalid, ignore it.
+00FE4E  1  F0 F0        	BEQ SETMODE    ; '.'  set MODE=BLOKXAM
+00FE50  1  C9 3A        	CMP #COLUMN    ;  ':' character
+00FE52  1  F0 EB        	BEQ SETSTOR    ;  set MODE=STORE
+00FE54  1  C9 52        	CMP #LETTER_R  ; check for 'R'
+00FE56  1  F0 3B        	BEQ RUN        ; run application at XAM address
+00FE58  1  86 08        	STX L          ; store input hex number in L:H
+00FE5A  1  86 09        	STX H
+00FE5C  1  84 0A        	STY YSAV       ; save Y
+00FE5E  1               NEXTHEX:           ; check for HEXADECIMAL digit
+00FE5E  1  B9 00 02     	LDA IN,Y
+00FE61  1  49 30        	EOR #48        ; A=A-'0'
+00FE63  1  C9 0A        	CMP #10        ; if a<10 then
+00FE65  1  90 06        	BCC DIG        ; A in {0..9}
+00FE67  1  E9 07        	SBC #7         ; else A-7 map to {10..15}
+00FE69  1  C9 10        	CMP #16        ; if A>15 then
+00FE6B  1  B0 11        	BCS NOTHEX     ;  this is not en HEX digit
+00FE6D  1               DIG:               ;  shift digit bit 7:4 of A
+00FE6D  1  0A           	ASL            ; shift A left 1 bit
+00FE6E  1  0A           	ASL            ; repeat 4 times
+00FE6F  1  0A           	ASL
+00FE70  1  0A           	ASL
+00FE71  1  A2 04        	LDX #4         ; shift count to transfert
+00FE73  1               HEXSHIFT:          ; this digit in L:H variable
+00FE73  1  0A           	ASL            ; A bit 7 in Carry
+00FE74  1  26 08        	ROL L          ; carry in bit 0 of L and bit 7 in Carry
+00FE76  1  26 09        	ROL H          ; Carry in bit 0 of H.
+00FE78  1  CA           	DEX            ; decrement X
+00FE79  1  D0 F8        	BNE HEXSHIFT   ; repeat 4 times
+00FE7B  1  C8           	INY            ; move Y to next char in buffer
+00FE7C  1  D0 E0        	BNE NEXTHEX    ; check if another HEX number
+00FE7E  1               NOTHEX:            ; Y rollover means buffer overflow
+00FE7E  1  C4 0A        	CPY YSAV       ; check there was an HEX number in buffer
+00FE80  1  F0 92        	BEQ ESCAPE     ; if Y as not changed there was not
+00FE82  1  24 0B        	BIT MODE       ; check for MODE state, A:7 in carry, A:6 in overflow
+00FE84  1  50 10        	BVC NOTSTOR    ; if bit 6 is cleared then not STORE
+00FE86  1  A5 08        	LDA L 		   ; either XAM or BLOKXAM mode
+00FE88  1  81 06        	STA (STL,X)    ; save last address parsed in STL:STH
+00FE8A  1  E6 06        	INC STL        ; increment STL:STH
+00FE8C  1  D0 B5        	BNE NEXTITEM
+00FE8E  1  E6 07        	INC STH        ; STL overflowed then increment STH
+00FE90  1               TONEXTITEM:        ; go to accept next buffer token
+00FE90  1  4C 43 FE     	JMP NEXTITEM
+00FE93  1               RUN:               ; if RUN mode jmp here
+00FE93  1  6C 04 00     	JMP (XAML)     ; jump to address in XAM
+00FE96  1               NOTSTOR:           ; MODE is XAM or BLOKXAM?
+00FE96  1  D0 2B        	BNE XAMNEXT    ; if Z=0 -> BLOKXAM
+00FE98  1  A2 02        	LDX #2
+00FE9A  1               SETADR:            ; copy Address from L:H to ST and XAM
+00FE9A  1  B5 07        	LDA L-1,X
+00FE9C  1  95 05        	STA STL-1,X
+00FE9E  1  95 03        	STA XAML-1,X
+00FEA0  1  CA           	DEX
+00FEA1  1  D0 F7        	BNE SETADR      ; 2 bytes to copy
+00FEA3  1               NXTPRNT:
+00FEA3  1  D0 14        	BNE PRDATA      ; if A==0 then end of line
+00FEA5  1  A9 0D        	LDA #CR         ; display 8 data bytes per line
+00FEA7  1  20 EE FE     	JSR ECHO        ; send carriage return to terminal
+00FEAA  1  A5 05        	LDA XAMH        ; print next address at start of next line
+00FEAC  1  20 DB FE     	JSR PRBYTE      ; print address high byte
+00FEAF  1  A5 04        	LDA XAML        ; address low byte
+00FEB1  1  20 DB FE     	JSR PRBYTE      ; print address low byte
+00FEB4  1  A9 3A        	LDA #COLUMN     ; display ':' after address
+00FEB6  1  20 EE FE     	JSR ECHO
+00FEB9  1               PRDATA:             ; print data byte to terminal
+00FEB9  1  A9 20        	LDA #SPACE      ; separate by a blank
+00FEBB  1  20 EE FE     	JSR ECHO
+00FEBE  1  A1 04        	LDA (XAML,X)    ; get data from memory
+00FEC0  1  20 DB FE     	JSR PRBYTE      ; print it to terminal.
+00FEC3  1               XAMNEXT:            ; next data item
+00FEC3  1  86 0B        	STX MODE        ; here X==0, reset MODE to XAM.
+00FEC5  1  A5 04        	LDA XAML        ; compare XAM address with L:H address
+00FEC7  1  C5 08        	CMP L           ; when equal no more data to display
+00FEC9  1  A5 05        	LDA XAMH        ; XAM high byte
+00FECB  1  E5 09        	SBC H           ; A=A-H-carry
+00FECD  1  B0 C1        	BCS TONEXTITEM  ; XAM<L:H then next item
+00FECF  1  E6 04        	INC XAML        ; increment XAM address
+00FED1  1  D0 02        	BNE MOD8CHK     ; no overflow
+00FED3  1  E6 05        	INC XAMH        ; XAML overflow, increment XAMH
+00FED5  1               MOD8CHK:
+00FED5  1  A5 04        	LDA XAML        ; load A with low byte of address
+00FED7  1  29 07        	AND #7          ; Address modulo 8 (bytes per line)
+00FED9  1  10 C8        	BPL NXTPRNT     ; alway taken
+00FEDB  1               PRBYTE:
+00FEDB  1  48           	PHA             ; save A on stack
+00FEDC  1               		            ; shift A7:4 in A3:0
+00FEDC  1  4A           	LSR             ; shift A 1 bit right
+00FEDD  1  4A           	LSR             ; repeat 4 times
+00FEDE  1  4A           	LSR
+00FEDF  1  4A           	LSR
+00FEE0  1  20 E4 FE     	JSR PRHEX      ; print high digit
+00FEE3  1  68           	PLA            ; pull low digit and print it.
+00FEE4  1               PRHEX:
+00FEE4  1  29 0F        	AND #$F        ; precaution an hex digit is 4 bits
+00FEE6  1  09 30        	ORA #48        ; add ASCII '0' to A
+00FEE8  1  C9 3A        	CMP #58        ; if <= ASCII '9'
+00FEEA  1  90 02        	BCC ECHO       ; print it
+00FEEC  1  69 06        	ADC #6         ; adjust to {'A'..'F'} range
+00FEEE  1               ECHO:              ; send character to terminal
+00FEEE  1  8D 00 D0     	STA ACIA_DATA
+00FEF1  1  DA           	PHX            ; save X on stack
+00FEF2  1  A2 40        	LDX #64        ; transmission delay, 320µsec/5cy  for Fclk=3.6864Mhz
+00FEF4  1               DELAY:
+00FEF4  1  CA           	DEX 		   ; 2cy
+00FEF5  1  D0 FD        	BNE DELAY      ; 3cy = 5cy
+00FEF7  1  FA           	PLX            ; pull X from stack
+00FEF8  1  60           	RTS            ; done
+00FEF9  1               	.ENDPROC
+00FEF9  1               
+00FEF9  1               	.segment "VECTORS"
+00FEF9  1               	.org $FFFA
+00FFFA  1  00 0F        	.WORD $F00   ; (NMI)
+00FFFC  1  00 FF        	.WORD $FF00  ; (RESET)
+00FFFE  1  00 00        	.WORD 0      ; (IRQ)
+010000  1               
+010000  1               
+010000  1               
+010000  1               
+010000  1               
