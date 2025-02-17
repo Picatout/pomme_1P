@@ -3,6 +3,11 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-02-13
+
+* Début du projet **pomme-1P** construction d'un ordinateur simple basé sur le MPU W65C02S de [Western Design Center](https://www.westerndesigncenter.com/).
+
+
 #### 2021-03-24
 
 * Travail sur la documentation. 

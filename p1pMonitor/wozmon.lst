@@ -1,0 +1,207 @@
+ca65 V2.19 - Git 99b113d
+Main file   : p1pWozmon.asm
+Current file: p1pWozmon.asm
+
+000000r 1               ;----------------------------
+000000r 1               ; Wozmon adapté au pomme-1.5
+000000r 1               ;----------------------------
+000000r 1               
+000000r 1               	.PC02
+000000r 1               
+000000r 1               	.org $FF00
+00FF00  1               
+00FF00  1               	.segment "WOZMON"
+00FF00  1               
+00FF00  1               	ACIA_DATA = $D000
+00FF00  1               	ACIA_STATUS = $D001
+00FF00  1               	ACIA_CMD = $D002
+00FF00  1               	ACIA_CR = $D003
+00FF00  1               
+00FF00  1               	; variables
+00FF00  1               	XAML = 4
+00FF00  1               	XAMH = 5
+00FF00  1               	STL  = 6
+00FF00  1               	STH  = 7
+00FF00  1               	L    = 8
+00FF00  1               	H    = 9
+00FF00  1               	YSAV = $A
+00FF00  1               	MODE = $B
+00FF00  1               	IN   = $200
+00FF00  1               
+00FF00  1               	; ASCII constant
+00FF00  1               	CTRL_C = 3
+00FF00  1               	CR = 13
+00FF00  1               	BS = 8
+00FF00  1               	ESC = 27
+00FF00  1               	SPACE = 32
+00FF00  1               	BSLASH = $5C
+00FF00  1               	DOT = $2E
+00FF00  1               	COLUMN = $3A
+00FF00  1               	LETTER_F = $46
+00FF00  1               	LETTER_R = $52
+00FF00  1               
+00FF00  1               .PROC RESET
+00FF00  1  D8           	CLD
+00FF01  1  58           	CLI
+00FF02  1               ; SETUP ACIA FOR 115200 BAUD,8N1
+00FF02  1  A9 03        	LDA #3   ; DTR ready, no IRQ
+00FF04  1  8D 02 D0     	STA ACIA_CMD
+00FF07  1  A0 FE        	LDY #$FE
+00FF09  1               NOTCR:
+00FF09  1  C9 08        	CMP #BS
+00FF0B  1  F0 13        	BEQ BACKSPACE
+00FF0D  1  C9 1B        	CMP #ESC
+00FF0F  1  F0 03        	BEQ ESCAPE
+00FF11  1  C8           	INY
+00FF12  1  10 12        	BPL NEXTCHAR
+00FF14  1               ESCAPE:
+00FF14  1  A9 5C        	LDA #BSLASH
+00FF16  1  20 EE FF     	JSR ECHO
+00FF19  1               GETLINE:
+00FF19  1  A9 0D        	LDA #CR
+00FF1B  1  20 EE FF     	JSR ECHO
+00FF1E  1  A0 01        	LDY #1
+00FF20  1               BACKSPACE:
+00FF20  1  88           	DEY
+00FF21  1  30 F6        	BMI GETLINE
+00FF23  1  20 EE FF     	JSR ECHO
+00FF26  1               NEXTCHAR:
+00FF26  1  AD 01 D0     	LDA ACIA_STATUS
+00FF29  1  29 08        	AND #8
+00FF2B  1  F0 F9        	BEQ NEXTCHAR
+00FF2D  1  AD 00 D0     	LDA ACIA_DATA
+00FF30  1  99 00 02     	STA IN,Y
+00FF33  1  20 EE FF     	JSR ECHO
+00FF36  1  C9 0D        	CMP #CR
+00FF38  1  D0 CF        	BNE NOTCR
+00FF3A  1  A0 FF        	LDY #$FF
+00FF3C  1  A9 00        	LDA #0
+00FF3E  1  AA           	TAX
+00FF3F  1               SETSTOR:
+00FF3F  1  0A           	ASL
+00FF40  1               SETMODE:
+00FF40  1  85 0B        	STA MODE ; 0 = XAM, $74 = STOR, $2E=BLOKXAM
+00FF42  1               BLSKIP:
+00FF42  1  C8           	INY
+00FF43  1               NEXTITEM:
+00FF43  1  B9 00 02     	LDA IN,Y
+00FF46  1  C9 0D        	CMP #CR
+00FF48  1  F0 CF        	BEQ GETLINE
+00FF4A  1  C9 2E        	CMP #DOT
+00FF4C  1  90 F4        	BCC BLSKIP
+00FF4E  1  F0 F0        	BEQ SETMODE
+00FF50  1  C9 3A        	CMP #COLUMN
+00FF52  1  F0 EB        	BEQ SETSTOR
+00FF54  1  C9 52        	CMP #LETTER_R
+00FF56  1  F0 3B        	BEQ RUN
+00FF58  1  86 08        	STX L
+00FF5A  1  86 09        	STX H
+00FF5C  1  84 0A        	STY YSAV
+00FF5E  1               NEXTHEX:
+00FF5E  1  B9 00 02     	LDA IN,Y
+00FF61  1  49 30        	EOR #48  ; A-0
+00FF63  1  C9 0A        	CMP #10
+00FF65  1  90 06        	BCC DIG  ; A in {0..9}
+00FF67  1  69 06        	ADC #$6 ; map to {A..F}
+00FF69  1  C9 47        	CMP #LETTER_F+1
+00FF6B  1  90 11        	BCC NOTHEX
+00FF6D  1               DIG:
+00FF6D  1  0A           	ASL
+00FF6E  1  0A           	ASL
+00FF6F  1  0A           	ASL
+00FF70  1  0A           	ASL
+00FF71  1  A2 04        	LDX #4
+00FF73  1               HEXSHIFT:
+00FF73  1  0A           	ASL
+00FF74  1  26 08        	ROL L
+00FF76  1  26 09        	ROL H
+00FF78  1  CA           	DEX
+00FF79  1  D0 F8        	BNE HEXSHIFT
+00FF7B  1  C8           	INY
+00FF7C  1  D0 E0        	BNE NEXTHEX
+00FF7E  1               NOTHEX:
+00FF7E  1  C4 0A        	CPY YSAV
+00FF80  1  F0 92        	BEQ ESCAPE
+00FF82  1  24 0B        	BIT MODE
+00FF84  1  50 10        	BVC NOTSTOR
+00FF86  1  A5 08        	LDA L
+00FF88  1  81 06        	STA (STL,X)
+00FF8A  1  E6 06        	INC STL
+00FF8C  1  D0 B5        	BNE NEXTITEM
+00FF8E  1  E6 07        	INC STH
+00FF90  1               TONEXTITEM:
+00FF90  1  4C 43 FF     	JMP NEXTITEM
+00FF93  1               RUN:
+00FF93  1  6C 04 00     	JMP (XAML)
+00FF96  1               NOTSTOR:
+00FF96  1  D0 2B        	BNE XAMNEXT ; if Z=0 -> BLOKXAM
+00FF98  1  A2 02        	LDX #2
+00FF9A  1               SETADR: ; copy Address in L:H to ST and XAM
+00FF9A  1  B5 07        	LDA L-1,X
+00FF9C  1  95 05        	STA STL-1,X
+00FF9E  1  95 03        	STA XAML-1,X
+00FFA0  1  CA           	DEX
+00FFA1  1  D0 F7        	BNE SETADR
+00FFA3  1               NXTPRNT:
+00FFA3  1  D0 14        	BNE PRDATA
+00FFA5  1  A9 0D        	LDA #CR
+00FFA7  1  20 EE FF     	JSR ECHO
+00FFAA  1  A5 05        	LDA XAMH
+00FFAC  1  20 DB FF     	JSR PRBYTE
+00FFAF  1  A5 04        	LDA XAML
+00FFB1  1  20 DB FF     	JSR PRBYTE
+00FFB4  1  A9 3A        	LDA #COLUMN
+00FFB6  1  20 EE FF     	JSR ECHO
+00FFB9  1               PRDATA:
+00FFB9  1  A9 20        	LDA #SPACE
+00FFBB  1  20 EE FF     	JSR ECHO
+00FFBE  1  A1 04        	LDA (XAML,X)
+00FFC0  1  20 DB FF     	JSR PRBYTE
+00FFC3  1               XAMNEXT:
+00FFC3  1  86 0B        	STX MODE
+00FFC5  1  A5 04        	LDA XAML
+00FFC7  1  C5 08        	CMP L
+00FFC9  1  A5 05        	LDA XAMH
+00FFCB  1  E5 09        	SBC H
+00FFCD  1  B0 C1        	BCS TONEXTITEM ; XAM==L:H then no more item
+00FFCF  1  E6 04        	INC XAML       ; next byte
+00FFD1  1  D0 02        	BNE MOD8CHK
+00FFD3  1  E6 05        	INC XAMH
+00FFD5  1               MOD8CHK:
+00FFD5  1  A5 04        	LDA XAML
+00FFD7  1  29 07        	AND #7
+00FFD9  1  10 C8        	BPL NXTPRNT ; alway taken
+00FFDB  1               PRBYTE:
+00FFDB  1  48           	PHA   ; save A for MSB
+00FFDC  1  4A           	LSR
+00FFDD  1  4A           	LSR
+00FFDE  1  4A           	LSR
+00FFDF  1  4A           	LSR
+00FFE0  1  20 E4 FF     	JSR PRHEX
+00FFE3  1  68           	PLA
+00FFE4  1               PRHEX:
+00FFE4  1  29 0F        	AND #$F
+00FFE6  1  09 30        	ORA #48
+00FFE8  1  C9 0A        	CMP #10
+00FFEA  1  90 02        	BCC ECHO
+00FFEC  1  69 06        	ADC #6
+00FFEE  1               ECHO:
+00FFEE  1  8D 00 D0     	STA ACIA_DATA
+00FFF1  1  DA           	PHX
+00FFF2  1  A2 40        	LDX #64 ; 320µsec/5cy  for Fclk=3.6864Mhz
+00FFF4  1               DELAY:
+00FFF4  1  CA           	DEX 		; 2cy
+00FFF5  1  D0 FD        	BNE DELAY   ; 3cy = 5cy
+00FFF7  1  FA           	PLX
+00FFF8  1  60           	RTS
+00FFF9  1               	.ENDPROC
+00FFF9  1               
+00FFF9  1               	.org $FFFA
+00FFFA  1  00 0F        	.WORD $F00   ; (NMI)
+00FFFC  1  00 FF        	.WORD $FF00  ; (RESET)
+00FFFE  1  00 00        	.WORD 0      ; (IRQ)
+010000  1               
+010000  1               
+010000  1               
+010000  1               
+010000  1               
