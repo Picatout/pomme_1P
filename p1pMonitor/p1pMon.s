@@ -33,8 +33,28 @@
 	LETTER_F = $46
 	LETTER_R = $52
 
+	.segment "CODE"
+	.org $E000 
+.PROC HELLO	
+	CLD   ; clear decimal mode
+	CLI   ; disable interrupts, not used 
+; SETUP ACIA FOR 115200 BAUD,8N1 
+	LDA #3         ; DTR ready, no IRQ
+	STA ACIA_CMD   ; 
+MSG_LOOP:
+	LDY #0       ; initialize Y to -2 
+MSG_LOOP2:
+	LDA (MSG,Y)
+	BEQ MSG_LOOP 
+	BSR ECHO 
+	INC Y 
+	BRA MSG_LOOP2 
+
+MSG: .asciiz "Hello world! "	
+.ENDPROC 
+	
 	.segment "WOZMON"
-	.org $FE00
+	.org $FF00
 	
 .PROC RESET	
 	CLD   ; clear decimal mode
@@ -196,7 +216,7 @@ DELAY:
 	.segment "VECTORS" 
 	.org $FFFA    
 	.WORD $F00   ; (NMI)
-	.WORD $FF00  ; (RESET)
+	.WORD $E000 ;$FF00  ; (RESET)
 	.WORD 0      ; (IRQ)
 
 	
