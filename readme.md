@@ -1,97 +1,55 @@
 <!-- 
 Copyright Jacques Deschênes, 2025
-Ce document fait parti du projet pomme-1P
-https://github.com/picatout/pomme-1P
+Ce document fait parti du projet pomme-I+
+https://github.com/picatout/pomme-I+
 -->
 <a id="top"></a>
-[-&GT;English](readme-en.md)
-#  Blue pill Tiny BASIC 
+# POMME I+
 
-Il s'agit de l'implémentation d'un timbre BASIC sur la carte blue pill. Ce BASIC est basé sur [tiny BASIC](https://en.wikipedia.org/wiki/Tiny_BASIC) mais avec des extensions.  
+En 2023/24 j'ai développé l'ordinateur [pomme-I](https://github.com/Picatout/pomme-I) sur une carte [NUCLEO-8S207K8](https://www.st.com/en/evaluation-tools/nucleo-8s207k8.html)
+, cette année j'ai décidé de fabriqué une version du [pomme-I](https://github.com/Picatout/pomme-I) avec un micropresseur [W65C02S](https://www.mouser.ca/ProductDetail/Western-Design-Center-WDC/W65C02S6TPG-14?qs=opBjA1TV903lvWo9AEKH5w%3D%3D) qui est une version CMOS améliorée du vénérable 6502 qui était utilisé dans le Apple-I. Cette version du **MPU** comprend des instruction supplémentaires par rapport à l'original mais possède une compatibilité ascendante.
 
-* Interface interactive via le terminal VT100. 
-* Éditeur de texte et compilateur sur la carte. 
-* Système de fichiers simple implémenté dans la mémoire FLASH excédentaire du MCU stm32f103 de la carte blue pill.
-* Requière seulement un émulateur de terminal VT100 sur le PC et un port sériel rs-232 pour la communication avec la carte **blue pill** .
-* Supporte les routines de service d'interruption écrites en BASIC.
+J'ai effectué le montage sur 3 cartes de prototypage pleine longueur [Ptsolns](https://ptsolns.com/fr/products/proto-full-basic) collée l'une à l'autre par la tranche pour former un ensemble mesurant 17,5 x 20 cm. 
 
-## Documentation
-* [manuel de référence tiny BASIC](docs/tbi_reference.md)
-* [manuel de l'utilisateur](docs/manuel_util_tb.md)
-## Matériel requis
+![assemblage](docs/montage-pomme-I+.jpg)
 
-* Carte blue pill ![blue pill](docs/board-view-2.jpg).
+* La carte centrale comprend l'oscillateur *system clock* le *MPU* ainsi que le *décodeur d'adresses*.
+* La carte de droite contient la mémoire **RAM** et **EEPROM**
+* La carte de gauche contient un [W65C51S](https://www.mouser.ca/ProductDetail/Western-Design-Center-WDC/W65C51N6TPG-14?qs=AgbsAOSw7WDdUCKSkUixbw%3D%3D) qui est une interface de communication sérielle, i.e. UART. Un [MAX232CPE](https://www.mouser.ca/ProductDetail/Analog-Devices-Maxim-Integrated/MAX232CPE%2b?qs=1THa7WoU59H6WLBcdj%252BTOQ%3D%3D) est utilisé pour l'adaptation de niveau au standard **RS-232** pour permettre la communication avec un port sériel de PC. Il y a un espace libre suffisante sur la carte pour ajouter un module de développement du genre **NUCLEO-8S207K8**, **PI-PICO**, **BLUE PILL** ou encore **BLACK PILL**. À ce moment je n'ai pas arrêté mon choix sur le type d'exention que je vais ajouté sur cet espace. 
 
-* programmeur STLINK-V2 ![STLINK-V2](docs/stlink-v2.png).
+À cette étape je vais utilisé mon PC comme terminal pour le développement du software.  
 
-* Adapteur de niveaux RS-232 ![adapteur](docs/rs-232-level-adapter-assembly.png) pour interfacer la carte au PC 
+### Schématique
 
-* Sur le PC un port sériel RS-232 et un émulateur de terminal VT100.
+Pour l'essentiel la schématique du circuit est complète et peut-être consultée dans le document [docs/pomme_1+_schematic.pdf](docs/pome_1+_schematic.pdf).
 
-## Installation de Tiny BASIC sur la carte **blue pill**
-À partir du répertoire racine du projet
-. Lorsque la carte est branchée au programmeur STLINK-V2 et prête à être programmée faites la commande suivante: **make build && make flash**.
-```
-picatout:~/github/stm32-tbi$ make build && make flash
-arm-none-eabi-as  -a=build/stm32-tbi.lst stm32-tbi.s -g -obuild/stm32-tbi.o 
-arm-none-eabi-as  -a=build/terminal.lst terminal.s -g -obuild/terminal.o 
-arm-none-eabi-as  -a=build/tinyBasic.lst tinyBasic.s -g -obuild/tinyBasic.o 
-arm-none-eabi-ld -T stm32f103c8t6.ld  -g build/stm32-tbi.o build/terminal.o build/tinyBasic.o  -o build/stm32-tbi.elf
-arm-none-eabi-objcopy -O binary build/stm32-tbi.elf build/stm32-tbi.bin 
-arm-none-eabi-objdump -D build/stm32-tbi.elf > build/stm32-tbi.dasm
-st-flash --serial=483f6e066772574857351967 erase 
-st-flash 1.6.0
-2021-03-14T11:15:56 INFO usb.c: -- exit_dfu_mode
-2021-03-14T11:15:56 INFO common.c: Loading device parameters....
-2021-03-14T11:15:56 INFO common.c: Device connected is: F1 Medium-density device, id 0x20036410
-2021-03-14T11:15:56 INFO common.c: SRAM size: 0x5000 bytes (20 KiB), Flash: 0x10000 bytes (64 KiB) in pages of 1024 bytes
-Mass erasing
-st-flash  --serial=483f6e066772574857351967  write build/stm32-tbi.bin 0x8000000
-st-flash 1.6.0
-2021-03-14T11:15:56 INFO common.c: Loading device parameters....
-2021-03-14T11:15:56 INFO common.c: Device connected is: F1 Medium-density device, id 0x20036410
-2021-03-14T11:15:56 INFO common.c: SRAM size: 0x5000 bytes (20 KiB), Flash: 0x10000 bytes (64 KiB) in pages of 1024 bytes
-2021-03-14T11:15:56 INFO common.c: Ignoring 1024 bytes of 0xff at end of file
-2021-03-14T11:15:56 INFO common.c: Attempting to write 17408 (0x4400) bytes to stm32 address: 134217728 (0x8000000)
-Flash page at addr: 0x08004000 erased
-2021-03-14T11:15:57 INFO common.c: Finished erasing 17 pages of 1024 (0x400) bytes
-2021-03-14T11:15:57 INFO common.c: Starting Flash write for VL/F0/F3/F1_XL core id
-2021-03-14T11:15:57 INFO flash_loader.c: Successfully loaded flash loader in sram
- 17/17 pages written
-2021-03-14T11:15:58 INFO common.c: Starting verification of write complete
-2021-03-14T11:15:58 INFO common.c: Flash written and verified! jolly good!
-picatout:~/github/stm32-tbi$ 
-```
-Si tout se passe comme prévue le système **blue pill tiny BASIC** est maintenant installé sur la carte et prêt à l'utilisation.
+### État actuel du projet
+Dans l'état actuel du projet je branche l'ordinateur au PC et utilise l'émulateur de terminal **GTKTerm** configuré à 115200 8N1. Il n'y a qu'un petit programme de [test1.s](p1pMonitor/test1.s) dans l'EEPROM. 
 
-La communication avec le PC se fait sur les broches
+Le projet [eeProg](https://github.com/Picatout/eeprom-programmer) que j'ai développer dernièrement me sert à programmer cet EEPROM. 
 
-* **A9**&nbsp;&nbsp; Pour UART1 TX.
-* **A10**&nbsp;&nbsp; Pour UART1 RX.
-* N'importe quelle broche marquée **G** sur la carte pour le commun.
+### spécifications:
 
-## Adapteur de niveau simple
+* Processeur **W65C02STPG** de Western Design Center
+* 3 fréquences d'horlogue (*system clock*) sont disponible en positionnant un cavalier.
+    * 3,6864Mhz 
+    * 1,8432Mhz 
+    * 0,9216Mhz 
 
-* schématique d'un adapteur de niveau simple à réaliser et économique.
-![adapteur de niveaux RS-232](docs/rs-232-level-adaptor-schematic.png)
+* Mémoire RAM de 32Ko, 0x0000-0x7FFF 
+* Mémoire EEPROM de 8Ko, 0xE000-0xFFFF 
+* Mémoire EEPROM optionnel de 8Ko, 0xB000-0xCFFF
+* Périphérique ACIA à 0xD000-0xD003, décodage partiel sur un espace de 4Ko.
 
-* Montage sur carte perforée de 1" carré.
-![montage](docs/rs-232-level-adapter-assembly.png)
+### Dévelopement logiciel
+J'utilise l'assembleur [ca65](https://cc65.github.io/doc/ca65.html) pour le dévelopement logiciel.
 
-* Utilisation avec le PC
-![utilisation](docs/montage.jpg)
+1. je vais écrire les fonctions de base de l'interface de communication et ensuite adapter le WOZMON du Apple I. 
 
-<a id="sources"></a>
-# code source 
-Le code source est entièrement écris en assembleur et comprend les fichiers suivants.
-* [stm32-tbi.s](../stm32-tbi.s)  Initialisation matérielle et interfaces de bas niveaux.
-* [tinyBasic.s](../tinyBasic.s) L'interpréteur BASIC.
-* [terminal.s](../terminal.s) Communication avec l'émulateur de terminal sur le PC.
-* [stm32f103.inc](../stm32f103.inc) Définitions matérielles spécifiques au MCU de la carte **blue pill**. 
-* [tbi_macros.inc](../tbi_macros.inc) Définitions de macros et constantes.
-* [cmd_index.inc](../cmd_index.inc) Constantes associés aux jetons des commandes et fonctions. 
-* [ascii.inc](../ascii.inc) Constantes du jeu de caractères ASCII.
-* [stm32f103c8t6.ld](../stm32f103c8t6.ld) Script du linker.
-* [Makefile](../Makefile) Script pour la commande make.
+2. je vais étendre le BIOS et écrire un système d'exploitation inspiré de CP/M. 
+
+3. Adapter le Microsoft BASIC à partir du Travail de [Ben Eater](https://github.com/beneater/msbasic) qui est lui-même une adaptation à partir de [mist64/msBasic](https://github.com/mist64/msbasic).
+
+
 
 [début](#top)

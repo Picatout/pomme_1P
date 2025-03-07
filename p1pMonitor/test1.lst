@@ -1,0 +1,137 @@
+ca65 V2.18 - Ubuntu 2.19-1
+Main file   : test1.s
+Current file: test1.s
+
+000000r 1               ;----------------------------
+000000r 1               ; Wozmon adapté au pomme-1.5
+000000r 1               ;----------------------------
+000000r 1               
+000000r 1               	.PC02
+000000r 1               
+000000r 1               
+000000r 1               	ACIA_DATA = $D000
+000000r 1               	ACIA_STATUS = $D001
+000000r 1               	ACIA_CMD = $D002
+000000r 1               	ACIA_CTRL = $D003
+000000r 1               
+000000r 1               	; variables
+000000r 1               	XAML = 4
+000000r 1               	XAMH = 5
+000000r 1               	STL  = 6
+000000r 1               	STH  = 7
+000000r 1               	L    = 8
+000000r 1               	H    = 9
+000000r 1               	YSAV = $A
+000000r 1               	MODE = $B
+000000r 1               	RX_HEAD=$C
+000000r 1               	RX_TAIL=$D
+000000r 1               	IN   = $80
+000000r 1               	BUFF_SIZE=$80
+000000r 1               	; ASCII constant
+000000r 1               	CTRL_C = 3
+000000r 1               	CR = 13
+000000r 1               	BS = 8
+000000r 1               	ESC = 27
+000000r 1               	SPACE = 32
+000000r 1               	BSLASH = $5C
+000000r 1               	DOT = $2E
+000000r 1               	COLUMN = $3A
+000000r 1               	LETTER_F = $46
+000000r 1               	LETTER_R = $52
+000000r 1               
+000000r 1               	.segment "DATA"
+000000r 1               	.org IN
+000080  1  xx xx xx xx  RX_BUFFER: .RES BUFF_SIZE
+000084  1  xx xx xx xx  
+000088  1  xx xx xx xx  
+000100  1               
+000100  1               	.segment "CODE"
+000100  1               	.org $E000
+00E000  1               RESET:
+00E000  1  D8           	CLD   ; clear decimal mode
+00E001  1  78           	SEI   ; disable interrupts, not used
+00E002  1               ; clear inpu buffer
+00E002  1  A9 00        	LDA #0
+00E004  1  85 0C        	STA RX_HEAD
+00E006  1  85 0D        	STA RX_TAIL
+00E008  1               ; SETUP ACIA FOR 115200 BAUD,8N1
+00E008  1  A9 89        	LDA #$89       ; DTR ready, no parity
+00E00A  1  8D 02 D0     	STA ACIA_CMD   ;
+00E00D  1  A9 10        	LDA #16
+00E00F  1  8D 03 D0     	STA ACIA_CTRL
+00E012  1  58           	CLI          ; enable interrupt
+00E013  1  A0 00        	LDY #0       ; initialize Y to 0
+00E015  1               PRT_MSG:
+00E015  1  B9 3A E0     	LDA MSG,Y
+00E018  1  F0 06        	BEQ MSG_EXIT
+00E01A  1  20 2F E0     	JSR ECHO
+00E01D  1  C8           	INY
+00E01E  1  80 F5        	BRA PRT_MSG
+00E020  1               MSG_EXIT:
+00E020  1  A9 0D        	LDA #13
+00E022  1  20 2F E0     	JSR ECHO
+00E025  1               NEXTCHAR:          ; get next character
+00E025  1  20 47 E0     	JSR GETC
+00E028  1  F0 FB        	BEQ NEXTCHAR   ; no char in buffer
+00E02A  1  20 2F E0     	JSR ECHO       ; echo it to terminal
+00E02D  1  80 F6        	BRA NEXTCHAR
+00E02F  1               
+00E02F  1               ECHO:              ; send character to terminal
+00E02F  1  8D 00 D0     	STA ACIA_DATA
+00E032  1  DA           	PHX            ; save X on stack
+00E033  1  A2 40        	LDX #64        ; transmission delay, 320µsec/5cy  for Fclk=3.6864Mhz
+00E035  1               DELAY:
+00E035  1  CA           	DEX 		   ; 2cy
+00E036  1  D0 FD        	BNE DELAY      ; 3cy = 5cy
+00E038  1  FA           	PLX            ; pull X from stack
+00E039  1  60           	RTS            ; done
+00E03A  1               
+00E03A  1  48 65 6C 6C  MSG: .asciiz "Hello world!"
+00E03E  1  6F 20 77 6F  
+00E042  1  72 6C 64 21  
+00E047  1               
+00E047  1               ; get character from IN buffer
+00E047  1               GETC:
+00E047  1  A5 0D        	LDA      RX_TAIL
+00E049  1  C5 0C        	CMP      RX_HEAD
+00E04B  1  F0 0C        	BEQ      NO_CHAR
+00E04D  1  AA           	TAX
+00E04E  1  B5 80        	LDA      IN,X
+00E050  1  48           	PHA
+00E051  1  E8           	INX
+00E052  1  8A           	TXA
+00E053  1  29 7F        	AND     #$7F
+00E055  1  85 0D        	STA     RX_TAIL
+00E057  1  68           	PLA
+00E058  1  60           	RTS
+00E059  1               NO_CHAR:
+00E059  1  A9 00        	LDA #0
+00E05B  1  60           	RTS
+00E05C  1               
+00E05C  1               ; UART receive Interrupt handler
+00E05C  1               RX_IRQ_HANDLER:
+00E05C  1  48                           PHA
+00E05D  1  DA                           PHX
+00E05E  1  AD 01 D0                     LDA     ACIA_STATUS
+00E061  1  AD 00 D0                     LDA     ACIA_DATA
+00E064  1  A6 0C        				LDX     RX_HEAD
+00E066  1  95 80        				STA     IN,X
+00E068  1  E8           				INX
+00E069  1  8A           				TXA
+00E06A  1  29 7F        				AND     #$7F
+00E06C  1  85 0C        				STA     RX_HEAD
+00E06E  1  FA                           PLX
+00E06F  1  68                           PLA
+00E070  1  40                           RTI
+00E071  1               
+00E071  1               
+00E071  1               	.segment "VECTORS"
+00E071  1               	.org $FFFA
+00FFFA  1  00 0F        	.WORD $F00   ; (NMI)
+00FFFC  1  00 E0        	.WORD RESET  ; (RESET)
+00FFFE  1  5C E0        	.WORD RX_IRQ_HANDLER      ; (IRQ)
+010000  1               
+010000  1               
+010000  1               
+010000  1               
+010000  1               
