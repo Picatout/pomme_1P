@@ -7,7 +7,7 @@ https://github.com/picatout/pomme-I+
 # POMME I+
 
 En 2023/24 j'ai développé l'ordinateur [pomme-I](https://github.com/Picatout/pomme-I) sur une carte [NUCLEO-8S207K8](https://www.st.com/en/evaluation-tools/nucleo-8s207k8.html)
-, cette année j'ai décidé de fabriqué une version du [pomme-I](https://github.com/Picatout/pomme-I) avec un micropresseur [W65C02S](https://www.mouser.ca/ProductDetail/Western-Design-Center-WDC/W65C02S6TPG-14?qs=opBjA1TV903lvWo9AEKH5w%3D%3D) qui est une version CMOS améliorée du vénérable 6502 qui était utilisé dans le Apple-I. Cette version du **MPU** comprend des instruction supplémentaires par rapport à l'original mais possède une compatibilité ascendante.
+, cette année j'ai décidé de fabriqué une version du [pomme-I](https://github.com/Picatout/pomme-I) avec un micropresseur [W65C02S](https://www.mouser.ca/ProductDetail/Western-Design-Center-WDC/W65C02S6TPG-14?qs=opBjA1TV903lvWo9AEKH5w%3D%3D) qui est une version CMOS améliorée du vénérable 6502 qui était utilisé dans le Apple-I. Cette version du **MPU** comprend des instructions supplémentaires par rapport à l'original mais possède une compatibilité ascendante.
 
 J'ai effectué le montage sur 3 cartes de prototypage pleine longueur [Ptsolns](https://ptsolns.com/fr/products/proto-full-basic) collée l'une à l'autre par la tranche pour former un ensemble mesurant 17,5 x 20 cm. 
 
@@ -31,14 +31,14 @@ Le projet [eeProg](https://github.com/Picatout/eeprom-programmer) que j'ai déve
 ### spécifications:
 
 * Processeur **W65C02STPG** de Western Design Center
-* 3 fréquences d'horlogue (*system clock*) sont disponible en positionnant un cavalier.
+* 3 fréquences d'horlogue (*system clock*) sont disponibles en positionnant un cavalier.
     * 3,6864Mhz 
     * 1,8432Mhz 
     * 0,9216Mhz 
 
 * Mémoire RAM de 32Ko, 0x0000-0x7FFF 
 * Mémoire EEPROM de 8Ko, 0xE000-0xFFFF 
-* Mémoire EEPROM optionnel de 8Ko, 0xB000-0xCFFF
+* Mémoire EEPROM optionnelle de 8Ko, 0xB000-0xCFFF
 * Périphérique ACIA à 0xD000-0xD003, décodage partiel sur un espace de 4Ko.
 
 ### Dévelopement logiciel
@@ -51,5 +51,7 @@ J'utilise l'assembleur [ca65](https://cc65.github.io/doc/ca65.html) pour le dév
 3. Adapter le Microsoft BASIC à partir du Travail de [Ben Eater](https://github.com/beneater/msbasic) qui est lui-même une adaptation à partir de [mist64/msBasic](https://github.com/mist64/msbasic).
 
 
+### Continuation du dévelopement matériel
+Au final cet ordinateur aura son propre terminal intégré et sera monté dans un boitier en bois semblable à celui que j'ai fait pour le [pomme-I](https://github.com/Picatout/pomme-I).
 
 [début](#top)
