@@ -6,9 +6,14 @@
 	
 	.include "bios.s"
 	
+; mode constants 
+	M_XAM = 0 
+	M_BLOKXAM = $2E ; '.'
+	M_STORE = $74  ; ':' << 1 
+
 	.segment "DATA" 
 	; monitor variables 
-	.org 6
+	.org $10   ; first 16 reserved for system variables 
 	XAML: .res 1 
 	XAMH: .res 1
 	STL: .res 1 
@@ -26,27 +31,27 @@ MON_INFO: .ASCIIZ "pomme 1+ monitor version 1.0R0"
 
 MONITOR:
 	_puts MON_INFO 
-	JSR NEW_LINE 
-MON1:
-	LDA #SHARP 
-	JSR PUTC 
+	JSR NEW_LINE
 GETLINE:
-	JSR READLN
-	BEQ MON1 
-PARSE_LINE:	
-	LDY #0 
-	BRA NEXTITEM 
+	JSR NEW_LINE
+	LDA #SHARP    ; prompt character '#'  
+	JSR PUTC      ; show prompt  
+	JSR READLN    ; read line from terminal
+	BEQ GETLINE   ; empty line 
+	LDY  #$FF     ; reset text index 
+	LDA #0        ; default mode = M_XAM 
+	TAX           ; hex digit accumulator = 0 
 SETSTOR:
-	ASL            ; multiply A by 2 
+	ASL            ; multiply ':' by 2 = $74  
 SETMODE:           ; set operation MODE 
 	STA MODE       ; 0 = XAM, $74 = STOR, $2E=BLOKXAM
 BLSKIP:
 	INY            ; move Y index to next buffer character 
 NEXTITEM:          ; parse next token 
-	LDA (TIB_PTR),Y 
+	LDA TIB,Y 
 	JSR UPPER 
 	CMP #CR        ; if carriage return parsing done 
-	BEQ MON1       ; accept next input 
+	BEQ GETLINE    ; accept next input 
 	CMP #DOT       ; check for MODE character 
 	BCC BLSKIP     ;  if char < '.' char invalid, ignore it.
 	BEQ SETMODE    ; '.'  set MODE=BLOKXAM 
@@ -54,15 +59,16 @@ NEXTITEM:          ; parse next token
 	BEQ SETSTOR    ;  set MODE=STORE
 	CMP #LETTER_R  ; check for 'R'
 	BEQ RUN        ; run application at XAM address 
-	STX L          ; store input hex number in L:H 
+	STX L          ; 0 in L:H 
 	STX H 
 	STY YSAV       ; save Y 
 NEXTHEX:           ; check for HEXADECIMAL digit 
-	LDA (TIB_PTR),Y
-	EOR #48        ; A=A-'0' 
+	LDA TIB,Y
+	JSR UPPER      ; convert {'a'..'f'} -> {'A'..'F'}
+	EOR #48        ; A=A EOR '0' if A in {'0'..'9'} then A in {0..9} else if A in {'A'..'Z'} then a in {'q'..'v'}
 	CMP #10        ; if a<10 then
 	BCC DIG        ; A in {0..9}
-	SBC #7         ; else A-7 map to {10..15}
+	ADC #$98       ; else if A in {$71..$76} then map to {10..15}
 	CMP #16        ; if A>15 then   
 	BCS NOTHEX     ;  this is not en HEX digit
 DIG:               ;  shift digit bit 7:4 of A 
@@ -129,7 +135,7 @@ XAMNEXT:            ; next data item
 	INC XAMH        ; XAML overflow, increment XAMH 
 MOD8CHK:           
 	LDA XAML        ; load A with low byte of address 
-	AND #7          ; Address modulo 8 (bytes per line)
+	AND #15         ; Address modulo 16 (bytes per line)
 	BPL NXTPRNT     ; alway taken 
 PRBYTE:  
 	PHA             ; save A on stack

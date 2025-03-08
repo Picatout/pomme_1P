@@ -90,7 +90,7 @@
 	COLUMN = $3A
 	; upper case letters 
     ; add $20 for lower letters
-    LOWER = $20 
+    LOWER = $20  
     LETTER_C = $43 ; upper 
 	LETTER_F = $46 ; upper 
 	LETTER_R = $52 ; upper 

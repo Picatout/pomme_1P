@@ -3,6 +3,12 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-03-08
+
+* Moniteur V1.0R0 débogué et fonctionnel.
+
+* Déboguer le moniteur 
+
 ### 2025-03-07
 
 * Adaptation du moniteur WOZMON à l'ordinateur **pomme-1+**

@@ -11,7 +11,17 @@
 	ACIA_STATUS = $D001 
 	ACIA_CMD = $D002
 	ACIA_CTRL = $D003
-	
+	RX_FULL = 1<<4 ; receive buffer full is bit 4 
+
+; Processor status register bits 
+    PSR_CARRY = 1
+    PSR_ZERO = 2
+    PSR_IRQ_DIS = 4
+    PSR_DMODE = 8 
+    PSR_BRK = 16 
+    PSR_OVF = 64 
+    PSR_NEG = 128 
+
    ; constants 
 	BUFF_SIZE=$20 ; keep it power of 2 <= 256 
 	IN   = $100-BUFF_SIZE 
@@ -25,7 +35,6 @@
 RX_HEAD: .res 1  ; ACIA RX queue head pointer 
 RX_TAIL: .res 1  ; ACIA RX queue tail pointer 
 STR_PTR: .res 2  ; pointer to string printed by PUTS 
-TIB_PTR: .res 2  ; pointer to TIB address 
 
 ; terminal input buffer.
 	.org IN
@@ -45,8 +54,14 @@ TIB:
 ;  hardware initialization
 ;-----------------------------    
 RESET:	
-	CLD   ; clear decimal mode
-	SEI   ; disable interrupts
+; initialize stack pointer     
+    LDX   $FF 
+    TXS   
+; intialize Status register 
+; disable iterrupts 
+    LDA   #PSR_IRQ_DIS
+    PHA 
+    PLP   
 ; clear input buffer 	
 	LDA #0 
 	STA RX_HEAD 
@@ -58,11 +73,6 @@ RESET:
 	STA ACIA_CTRL
 	CLI          ; enable interrupt           
 	LDY #0       ; initialize Y to 0  
-; initialize TIB_PTR 
-    LDA #<TIB 
-    STA TIB_PTR 
-    LDA #>TIB 
-    STA TIB_PTR+1 
 ; print BIOS information 
     JSR CLS ; clear terminal screen 
     _puts BIOS_INFO 
@@ -164,7 +174,7 @@ READLN_LOOP:
 TEST_CR: 
     CMP #CR 
     BNE NEXT_TEST 
-    STA (TIB_PTR),Y 
+    STA TIB,Y 
     INY
     JSR PUTC  
     BRA READLN_EXIT
@@ -174,7 +184,7 @@ NEXT_TEST:
     CMP #127 
     BPL READLN_LOOP ; >126 ignore it     
 KEEP_IT:
-    STA (TIB_PTR),Y 
+    STA TIB,Y 
     INY
     JSR PUTC  
     BRA READLN_LOOP 
@@ -216,11 +226,11 @@ CLS:
 ;    A   upper if letter 
 ;------------------------------
 UPPER:
-    CMP #$61
-    BMI UPPER_EXIT 
-    CMP #$5B 
+    CMP #$61 ; 'a' 
+    BMI UPPER_EXIT
+    CMP #$7B ; '{'
     BPL UPPER_EXIT 
-    EOR LOWER 
+    AND #$DF
 UPPER_EXIT:
     RTS 
 
@@ -230,14 +240,25 @@ UPPER_EXIT:
 RX_IRQ_HANDLER:
                 PHA
                 PHX 
-                LDA     ACIA_STATUS
-                LDA     ACIA_DATA
-				LDX     RX_HEAD 
+                LDA     ACIA_STATUS 
+                AND     #RX_FULL ; check rx bit 
+                BEQ     NOT_ACIA    ; interrupt was not trigerred by ACIA 
+                LDA     ACIA_DATA 
+				CMP     #CTRL_C 
+                BNE     RX1
+                JMP     RESET ; CTRL+C reset computer 
+RX1:
+                CMP     #127 
+                BPL     RX_DISCARD   ; ignore codes >126
+RX_ACCEPT:
+                LDX     RX_HEAD 
 				STA     IN,X 
 				INX
 				TXA 
 				AND     #BUFF_SIZE-1 
 				STA     RX_HEAD 
+NOT_ACIA:
+RX_DISCARD:
                 PLX
                 PLA
                 RTI 
@@ -245,8 +266,8 @@ RX_IRQ_HANDLER:
 
 	.segment "VECTORS" 
 	.org $FFFA    
-	.WORD $F00   ; (NMI)
-	.WORD RESET  ; (RESET)
+	.WORD RESET   ; (NMI)
+	.WORD RESET   ; (RESET)
 	.WORD RX_IRQ_HANDLER      ; (IRQ)
 
 	
