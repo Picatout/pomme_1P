@@ -1,87 +1,96 @@
-////
-// Copyright Jacques Deschênes 2021
-// This file is part of stm32-tbi 
-//
-//     stm32-tbi is free software: you can redistribute it and/or modify
-//     it under the terms of the GNU General Public License as published by
-//     the Free Software Foundation, either version 3 of the License, or
-//     (at your option) any later version.
-//
-//     stm32-tbi is distributed in the hope that it will be useful,
-//     but WITHOUT ANY WARRANTY// without even the implied warranty of
-//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//     GNU General Public License for more details.
-//
-//     You should have received a copy of the GNU General Public License
-//     along with stm32-tbi.  If not, see <http://www.gnu.org/licenses/>.
-////
+;;
+; Copyright Jacques Deschênes 2021
+; This file is part of stm32-tbi 
+;
+;     stm32-tbi is free software: you can redistribute it and/or modify
+;     it under the terms of the GNU General Public License as published by
+;     the Free Software Foundation, either version 3 of the License, or
+;     (at your option) any later version.
+;
+;     stm32-tbi is distributed in the hope that it will be useful,
+;     but WITHOUT ANY WARRANTY; without even the implied warranty of
+;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;     GNU General Public License for more details.
+;
+;     You should have received a copy of the GNU General Public License
+;     along with stm32-tbi.  If not, see <http:;www.gnu.org/licenses/>.
+;;
 
-//-------------------------------------------------------
-//     ASCII control  values
-//     CTRL_x   are VT100 keyboard values  
-// REF: https://en.wikipedia.org/wiki/ASCII    
-//-------------------------------------------------------
-	.equ CTRL_A ,  1
-	.equ SOH, CTRL_A  // start of heading 
-	.equ CTRL_B ,  2
-	.equ STX, CTRL_B  // start of text 
-	.equ CTRL_C ,  3
-	.equ ETX, CTRL_C  // end of text 
-	.equ CTRL_D ,  4
-	.equ EOT, CTRL_D  // end of transmission 
-	.equ CTRL_E ,  5
-	.equ ENQ, CTRL_E  // enquery 
-	.equ CTRL_F ,  6
-	.equ ACK, CTRL_F  // acknowledge
-	.equ CTRL_G ,  7
-	.equ BELL ,  7    // vt100 terminal generate a sound.
-	.equ CTRL_H ,  8  
-	.equ BS ,  8     // back space 
-	.equ CTRL_I ,  9
-	.equ TAB ,  9     // horizontal tabulation
-	.equ CTRL_J ,  10 
-	.equ LF ,  10     // line feed
-	.equ CTRL_K ,  11
-	.equ VT ,  11     // vertical tabulation 
-	.equ CTRL_L ,  12
-	.equ FF ,  12      // new page
-	.equ CTRL_M ,  13
-	.equ CR ,  13      // carriage return 
-	.equ CTRL_N ,  14
-	.equ SO, CTRL_N    // shift out 
-	.equ CTRL_O ,  15
-	.equ SI, CTRL_O    // shift in 
-	.equ CTRL_P ,  16
-	.equ DLE, CTRL_P   // data link escape 
-	.equ CTRL_Q ,  17
-	.equ DC1, CTRL_Q   // device control 1 
-	.equ XON, DC1 
-	.equ CTRL_R ,  18
-	.equ DC2, CTRL_R   // device control 2 
-	.equ CTRL_S ,  19
-	.equ DC3, CTRL_S   // device control 3
-	.equ XOFF, DC3 
-	.equ CTRL_T ,  20
-	.equ DC4, CTRL_T   // device control 4 
-	.equ CTRL_U ,  21
-	.equ NAK, CTRL_U   // negative acknowledge
-	.equ CTRL_V ,  22
-	.equ SYN, CTRL_V   // synchronous idle 
-	.equ CTRL_W ,  23
-	.equ ETB, CTRL_W   // end of transmission block
-	.equ CTRL_X ,  24
-	.equ CAN, CTRL_X   // cancel 
-	.equ CTRL_Y ,  25
-	.equ EM, CTRL_Y    // end of medium
-	.equ CTRL_Z ,  26
-	.equ SUB, CTRL_Z   // substitute 
-	.equ EOF, SUB      // end of text file in MSDOS 
-	.equ ESC ,  27     // escape 
-	.equ FS, 28        // file separator 
-	.equ GS, 29        // group separator 
-	.equ RS, 30  // record separator 
-	.equ US, 31  // unit separator 
-	.equ SPACE ,  32
-	.equ COMMA ,  44 
-	.equ SHARP ,  35
-	.equ TICK ,  39
+;-------------------------------------------------------
+;     ASCII control  values
+;     CTRL_x   are VT100 keyboard values  
+; REF: https:;en.wikipedia.org/wiki/ASCII    
+;-------------------------------------------------------
+	 CTRL_A = 1
+	 SOH=CTRL_A  ; start of heading 
+	 CTRL_B = 2
+	 STRX = CTRL_B  ; start of text 
+	 CTRL_C = 3
+	 ETX=CTRL_C  ; end of text 
+	 CTRL_D = 4
+	 EOT=CTRL_D  ; end of transmission 
+	 CTRL_E = 5
+	 ENQ=CTRL_E  ; enquery 
+	 CTRL_F = 6
+	 ACK=CTRL_F  ; acknowledge
+	 CTRL_G = 7
+	 BELL = 7    ; vt100 terminal generate a sound.
+	 CTRL_H = 8  
+	 BS = 8     ; back space 
+	 CTRL_I = 9
+	 TAB = 9     ; horizontal tabulation
+	 CTRL_J = 10 
+	 LF = 10     ; line feed
+	 CTRL_K = 11
+	 VT = 11     ; vertical tabulation 
+	 CTRL_L = 12
+	 FF = 12      ; new page
+	 CTRL_M = 13
+	 CR = 13      ; carriage return 
+	 CTRL_N = 14
+	 SO=CTRL_N    ; shift out 
+	 CTRL_O = 15
+	 SI=CTRL_O    ; shift in 
+	 CTRL_P = 16
+	 DLE=CTRL_P   ; data link escape 
+	 CTRL_Q = 17
+	 DC1=CTRL_Q   ; device control 1 
+	 XON=DC1 
+	 CTRL_R = 18
+	 DC2=CTRL_R   ; device control 2 
+	 CTRL_S = 19
+	 DC3=CTRL_S   ; device control 3
+	 XOFF=DC3 
+	 CTRL_T = 20
+	 DC4=CTRL_T   ; device control 4 
+	 CTRL_U = 21
+	 NAK=CTRL_U   ; negative acknowledge
+	 CTRL_V = 22
+	 SYN=CTRL_V   ; synchronous idle 
+	 CTRL_W = 23
+	 ETB=CTRL_W   ; end of transmission block
+	 CTRL_X = 24
+	 CAN=CTRL_X   ; cancel 
+	 CTRL_Y = 25
+	 EM=CTRL_Y    ; end of medium
+	 CTRL_Z = 26
+	 SUB=CTRL_Z   ; substitute 
+	 EOF=SUB      ; end of text file in MSDOS 
+	 ESC = 27     ; escape 
+	 FS=28        ; file separator 
+	 GS=29        ; group separator 
+	 RS=30  ; record separator 
+	 US=31  ; unit separator 
+	 SPACE = 32
+	 COMMA = 44 
+	 SHARP = 35
+	 TICK = 39
+
+	DOT = $2E
+	COLUMN = $3A
+	; upper case letters 
+    ; add $20 for lower letters
+    LOWER = $20 
+    LETTER_C = $43 ; upper 
+	LETTER_F = $46 ; upper 
+	LETTER_R = $52 ; upper 

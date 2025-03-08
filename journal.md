@@ -7,6 +7,7 @@ https://github.com/picatout/pomme-1P
 
 * Adaptation du moniteur WOZMON à l'ordinateur **pomme-1+**
 
+* Ajout du fichier [docs/montage-pomme-1+.jpg](docs/montage-pomme-1+.jpg).
 
 
 ### 2025-02-13

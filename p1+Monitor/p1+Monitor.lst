@@ -1,0 +1,536 @@
+ca65 V2.18 - Ubuntu 2.19-1
+Main file   : p1+Monitor.s
+Current file: p1+Monitor.s
+
+000000r 1               ;----------------------------
+000000r 1               ; Wozmon adapté au pomme-1.5
+000000r 1               ;----------------------------
+000000r 1               
+000000r 1               	.PC02
+000000r 1               
+000000r 1               	.include "bios.s"
+000000r 2               ;----------------------------
+000000r 2               ; Wozmon adapté au pomme-1.5
+000000r 2               ;----------------------------
+000000r 2               
+000000r 2               	.PC02
+000000r 2               
+000000r 2               	.include "../inc/ascii.inc"
+000000r 3               ;;
+000000r 3               ; Copyright Jacques Deschênes 2021
+000000r 3               ; This file is part of stm32-tbi
+000000r 3               ;
+000000r 3               ;     stm32-tbi is free software: you can redistribute it and/or modify
+000000r 3               ;     it under the terms of the GNU General Public License as published by
+000000r 3               ;     the Free Software Foundation, either version 3 of the License, or
+000000r 3               ;     (at your option) any later version.
+000000r 3               ;
+000000r 3               ;     stm32-tbi is distributed in the hope that it will be useful,
+000000r 3               ;     but WITHOUT ANY WARRANTY; without even the implied warranty of
+000000r 3               ;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+000000r 3               ;     GNU General Public License for more details.
+000000r 3               ;
+000000r 3               ;     You should have received a copy of the GNU General Public License
+000000r 3               ;     along with stm32-tbi.  If not, see <http:;www.gnu.org/licenses/>.
+000000r 3               ;;
+000000r 3               
+000000r 3               ;-------------------------------------------------------
+000000r 3               ;     ASCII control  values
+000000r 3               ;     CTRL_x   are VT100 keyboard values
+000000r 3               ; REF: https:;en.wikipedia.org/wiki/ASCII
+000000r 3               ;-------------------------------------------------------
+000000r 3               	 CTRL_A = 1
+000000r 3               	 SOH=CTRL_A  ; start of heading
+000000r 3               	 CTRL_B = 2
+000000r 3               	 STRX = CTRL_B  ; start of text
+000000r 3               	 CTRL_C = 3
+000000r 3               	 ETX=CTRL_C  ; end of text
+000000r 3               	 CTRL_D = 4
+000000r 3               	 EOT=CTRL_D  ; end of transmission
+000000r 3               	 CTRL_E = 5
+000000r 3               	 ENQ=CTRL_E  ; enquery
+000000r 3               	 CTRL_F = 6
+000000r 3               	 ACK=CTRL_F  ; acknowledge
+000000r 3               	 CTRL_G = 7
+000000r 3               	 BELL = 7    ; vt100 terminal generate a sound.
+000000r 3               	 CTRL_H = 8
+000000r 3               	 BS = 8     ; back space
+000000r 3               	 CTRL_I = 9
+000000r 3               	 TAB = 9     ; horizontal tabulation
+000000r 3               	 CTRL_J = 10
+000000r 3               	 LF = 10     ; line feed
+000000r 3               	 CTRL_K = 11
+000000r 3               	 VT = 11     ; vertical tabulation
+000000r 3               	 CTRL_L = 12
+000000r 3               	 FF = 12      ; new page
+000000r 3               	 CTRL_M = 13
+000000r 3               	 CR = 13      ; carriage return
+000000r 3               	 CTRL_N = 14
+000000r 3               	 SO=CTRL_N    ; shift out
+000000r 3               	 CTRL_O = 15
+000000r 3               	 SI=CTRL_O    ; shift in
+000000r 3               	 CTRL_P = 16
+000000r 3               	 DLE=CTRL_P   ; data link escape
+000000r 3               	 CTRL_Q = 17
+000000r 3               	 DC1=CTRL_Q   ; device control 1
+000000r 3               	 XON=DC1
+000000r 3               	 CTRL_R = 18
+000000r 3               	 DC2=CTRL_R   ; device control 2
+000000r 3               	 CTRL_S = 19
+000000r 3               	 DC3=CTRL_S   ; device control 3
+000000r 3               	 XOFF=DC3
+000000r 3               	 CTRL_T = 20
+000000r 3               	 DC4=CTRL_T   ; device control 4
+000000r 3               	 CTRL_U = 21
+000000r 3               	 NAK=CTRL_U   ; negative acknowledge
+000000r 3               	 CTRL_V = 22
+000000r 3               	 SYN=CTRL_V   ; synchronous idle
+000000r 3               	 CTRL_W = 23
+000000r 3               	 ETB=CTRL_W   ; end of transmission block
+000000r 3               	 CTRL_X = 24
+000000r 3               	 CAN=CTRL_X   ; cancel
+000000r 3               	 CTRL_Y = 25
+000000r 3               	 EM=CTRL_Y    ; end of medium
+000000r 3               	 CTRL_Z = 26
+000000r 3               	 SUB=CTRL_Z   ; substitute
+000000r 3               	 EOF=SUB      ; end of text file in MSDOS
+000000r 3               	 ESC = 27     ; escape
+000000r 3               	 FS=28        ; file separator
+000000r 3               	 GS=29        ; group separator
+000000r 3               	 RS=30  ; record separator
+000000r 3               	 US=31  ; unit separator
+000000r 3               	 SPACE = 32
+000000r 3               	 COMMA = 44
+000000r 3               	 SHARP = 35
+000000r 3               	 TICK = 39
+000000r 3               
+000000r 3               	DOT = $2E
+000000r 3               	COLUMN = $3A
+000000r 3               	; upper case letters
+000000r 3                   ; add $20 for lower letters
+000000r 3                   LOWER = $20
+000000r 3                   LETTER_C = $43 ; upper
+000000r 3               	LETTER_F = $46 ; upper
+000000r 3               	LETTER_R = $52 ; upper
+000000r 3               
+000000r 2                   .include "../inc/macros.inc"
+000000r 3               
+000000r 3               .macro _puts  addr
+000000r 3                   LDA #<addr
+000000r 3                   STA STR_PTR
+000000r 3                   LDA #>addr
+000000r 3                   STA STR_PTR+1
+000000r 3                   JSR PUTS
+000000r 3               .endmacro
+000000r 3               
+000000r 3               
+000000r 2               
+000000r 2               	ACIA_DATA = $D000
+000000r 2               	ACIA_STATUS = $D001
+000000r 2               	ACIA_CMD = $D002
+000000r 2               	ACIA_CTRL = $D003
+000000r 2               
+000000r 2                  ; constants
+000000r 2               	BUFF_SIZE=$20 ; keep it power of 2 <= 256
+000000r 2               	IN   = $100-BUFF_SIZE
+000000r 2                   TIB_ORG = $200
+000000r 2                   TIB_SIZE = 128
+000000r 2               
+000000r 2               
+000000r 2               	.segment "DATA"
+000000r 2               ; string pointer for PUTS
+000000r 2                   .org 0
+000000  2  xx           RX_HEAD: .res 1  ; ACIA RX queue head pointer
+000001  2  xx           RX_TAIL: .res 1  ; ACIA RX queue tail pointer
+000002  2  xx xx        STR_PTR: .res 2  ; pointer to string printed by PUTS
+000004  2  xx xx        TIB_PTR: .res 2  ; pointer to TIB address
+000006  2               
+000006  2               ; terminal input buffer.
+000006  2               	.org IN
+0000E0  2  xx xx xx xx  RX_BUFFER: .RES BUFF_SIZE
+0000E4  2  xx xx xx xx  
+0000E8  2  xx xx xx xx  
+000100  2               
+000100  2               ; transaction input buffer
+000100  2                   .org TIB_ORG
+000200  2               TIB:
+000200  2  xx xx xx xx      .res TIB_SIZE
+000204  2  xx xx xx xx  
+000208  2  xx xx xx xx  
+000280  2               
+000280  2               	.segment "CODE"
+000280  2               	.org $E000
+00E000  2               
+00E000  2               
+00E000  2               ;-----------------------------
+00E000  2               ;  COLD START
+00E000  2               ;  hardware initialization
+00E000  2               ;-----------------------------
+00E000  2               RESET:
+00E000  2  D8           	CLD   ; clear decimal mode
+00E001  2  78           	SEI   ; disable interrupts
+00E002  2               ; clear input buffer
+00E002  2  A9 00        	LDA #0
+00E004  2  85 00        	STA RX_HEAD
+00E006  2  85 01        	STA RX_TAIL
+00E008  2               ; SETUP ACIA FOR 115200 BAUD,8N1
+00E008  2  A9 89        	LDA #$89       ; DTR ready, no parity
+00E00A  2  8D 02 D0     	STA ACIA_CMD   ;
+00E00D  2  A9 10        	LDA #16
+00E00F  2  8D 03 D0     	STA ACIA_CTRL
+00E012  2  58           	CLI          ; enable interrupt
+00E013  2  A0 00        	LDY #0       ; initialize Y to 0
+00E015  2               ; initialize TIB_PTR
+00E015  2  A9 00            LDA #<TIB
+00E017  2  85 04            STA TIB_PTR
+00E019  2  A9 02            LDA #>TIB
+00E01B  2  85 05            STA TIB_PTR+1
+00E01D  2               ; print BIOS information
+00E01D  2  20 CA E0         JSR CLS ; clear terminal screen
+00E020  2  A9 31 85 02      _puts BIOS_INFO
+00E024  2  A9 E0 85 03  
+00E028  2  20 60 E0     
+00E02B  2  20 58 E0         JSR NEW_LINE          ;
+00E02E  2  4C 1F FF         JMP MONITOR  ; embedded application
+00E031  2               
+00E031  2  70 6F 6D 6D  BIOS_INFO: .asciiz "pomme I+ BIOS version 1.0R0"
+00E035  2  65 20 49 2B  
+00E039  2  20 42 49 4F  
+00E04D  2               
+00E04D  2               ;---------------------------
+00E04D  2               ; send character to terminal
+00E04D  2               ; input:
+00E04D  2               ;    A   character to send
+00E04D  2               ;---------------------------
+00E04D  2               PUTC:
+00E04D  2  8D 00 D0     	STA ACIA_DATA  ; store character in ACIA register
+00E050  2  DA           	PHX            ; save X on stack
+00E051  2               ; need delay to avoid character overwrite in ACIA data register
+00E051  2               ; 10 bits at 115200 BAUD = 86.8µsec
+00E051  2               ; if Fclk=3.6864Mhz transmission delay --> 320 cycles/5cy = 64 loops
+00E051  2  A2 40        	LDX #64
+00E053  2               DELAY:
+00E053  2  CA           	DEX 		   ; 2cy
+00E054  2  D0 FD        	BNE DELAY      ; 3cy = 5cy per loop
+00E056  2  FA           	PLX            ; pull X from stack
+00E057  2  60           	RTS            ; done
+00E058  2               
+00E058  2               ;------------------------
+00E058  2               ; send new line character
+00E058  2               ;------------------------
+00E058  2               NEW_LINE:
+00E058  2  48               PHA
+00E059  2  A9 0D            LDA #CR
+00E05B  2  20 4D E0         JSR PUTC
+00E05E  2  68               PLA
+00E05F  2  60               RTS
+00E060  2               
+00E060  2               ;---------------------------------
+00E060  2               ; print string to console
+00E060  2               ; input:
+00E060  2               ;   STR_PTR   pointer to .ASCIIZ
+00E060  2               ;---------------------------------
+00E060  2               PUTS:
+00E060  2  48               PHA
+00E061  2  5A               PHY
+00E062  2  A0 00            LDY #0
+00E064  2               PUTS_NEXT:
+00E064  2  B1 02        	LDA (STR_PTR),Y
+00E066  2  F0 06        	BEQ PUTS_EXIT
+00E068  2  20 4D E0     	JSR PUTC
+00E06B  2  C8           	INY
+00E06C  2  80 F6        	BRA PUTS_NEXT
+00E06E  2               PUTS_EXIT:
+00E06E  2  7A               PLY
+00E06F  2  68               PLA
+00E070  2  60               RTS
+00E071  2               
+00E071  2               ;-----------------------------
+00E071  2               ; get character from IN buffer
+00E071  2               ; output:
+00E071  2               ;     A    0||character
+00E071  2               ;-----------------------------
+00E071  2               GETC:
+00E071  2  A5 01        	LDA      RX_TAIL
+00E073  2  C5 00        	CMP      RX_HEAD
+00E075  2  F0 0C        	BEQ      NO_CHAR
+00E077  2  AA           	TAX
+00E078  2  B5 E0        	LDA      IN,X
+00E07A  2  48           	PHA
+00E07B  2  E8           	INX
+00E07C  2  8A           	TXA
+00E07D  2  29 1F        	AND     #BUFF_SIZE-1
+00E07F  2  85 01        	STA     RX_TAIL
+00E081  2  68           	PLA
+00E082  2  60           	RTS
+00E083  2               NO_CHAR:
+00E083  2  A9 00        	LDA #0
+00E085  2  60           	RTS
+00E086  2               
+00E086  2               ;-------------------------
+00E086  2               ; read line from terminal
+00E086  2               ; line terminated byte CR
+00E086  2               ;   BS delete last character
+00E086  2               ; output:
+00E086  2               ;    TIB   text line
+00E086  2               ;    A     line length
+00E086  2               ;-------------------------
+00E086  2               READLN:
+00E086  2  A0 00            LDY #0
+00E088  2               READLN_LOOP:
+00E088  2  20 71 E0         JSR GETC
+00E08B  2  F0 FB            BEQ READLN_LOOP
+00E08D  2  C9 08            CMP #BS
+00E08F  2  D0 09            BNE TEST_CR
+00E091  2  98               TYA
+00E092  2  F0 F4            BEQ READLN_LOOP
+00E094  2  20 B8 E0         JSR BACK_SPACE
+00E097  2  88               DEY
+00E098  2  80 EE            BRA READLN_LOOP
+00E09A  2               TEST_CR:
+00E09A  2  C9 0D            CMP #CR
+00E09C  2  D0 08            BNE NEXT_TEST
+00E09E  2  91 04            STA (TIB_PTR),Y
+00E0A0  2  C8               INY
+00E0A1  2  20 4D E0         JSR PUTC
+00E0A4  2  80 10            BRA READLN_EXIT
+00E0A6  2               NEXT_TEST:
+00E0A6  2  C9 20            CMP #SPACE
+00E0A8  2  30 DE            BMI READLN_LOOP ; ignore it
+00E0AA  2  C9 7F            CMP #127
+00E0AC  2  10 DA            BPL READLN_LOOP ; >126 ignore it
+00E0AE  2               KEEP_IT:
+00E0AE  2  91 04            STA (TIB_PTR),Y
+00E0B0  2  C8               INY
+00E0B1  2  20 4D E0         JSR PUTC
+00E0B4  2  80 D2            BRA READLN_LOOP
+00E0B6  2               READLN_EXIT:
+00E0B6  2  98               TYA
+00E0B7  2  60               RTS
+00E0B8  2               
+00E0B8  2               ;----------------------
+00E0B8  2               ; delete last character
+00E0B8  2               ;----------------------
+00E0B8  2               BACK_SPACE:
+00E0B8  2  48               PHA
+00E0B9  2  A9 08            LDA #BS
+00E0BB  2  20 4D E0         JSR PUTC
+00E0BE  2  A9 20            LDA #SPACE
+00E0C0  2  20 4D E0         JSR PUTC
+00E0C3  2  A9 08            LDA #BS
+00E0C5  2  20 4D E0         JSR PUTC
+00E0C8  2  68               PLA
+00E0C9  2  60               RTS
+00E0CA  2               
+00E0CA  2               ;----------------------
+00E0CA  2               ; clear terminal screen
+00E0CA  2               ;----------------------
+00E0CA  2               CLS:
+00E0CA  2  48               PHA
+00E0CB  2  A9 1B            LDA #ESC
+00E0CD  2  20 4D E0         JSR PUTC
+00E0D0  2  A9 63            LDA #LETTER_C+LOWER
+00E0D2  2  20 4D E0         JSR PUTC
+00E0D5  2  68               PLA
+00E0D6  2  60               RTS
+00E0D7  2               
+00E0D7  2               ;-----------------------------
+00E0D7  2               ;  upper case letter
+00E0D7  2               ; input:
+00E0D7  2               ;    A    character
+00E0D7  2               ; output:
+00E0D7  2               ;    A   upper if letter
+00E0D7  2               ;------------------------------
+00E0D7  2               UPPER:
+00E0D7  2  C9 61            CMP #$61
+00E0D9  2  30 06            BMI UPPER_EXIT
+00E0DB  2  C9 5B            CMP #$5B
+00E0DD  2  10 02            BPL UPPER_EXIT
+00E0DF  2  45 20            EOR LOWER
+00E0E1  2               UPPER_EXIT:
+00E0E1  2  60               RTS
+00E0E2  2               
+00E0E2  2               ;--------------------------------
+00E0E2  2               ; UART receive Interrupt handler
+00E0E2  2               ;--------------------------------
+00E0E2  2               RX_IRQ_HANDLER:
+00E0E2  2  48                           PHA
+00E0E3  2  DA                           PHX
+00E0E4  2  AD 01 D0                     LDA     ACIA_STATUS
+00E0E7  2  AD 00 D0                     LDA     ACIA_DATA
+00E0EA  2  A6 00        				LDX     RX_HEAD
+00E0EC  2  95 E0        				STA     IN,X
+00E0EE  2  E8           				INX
+00E0EF  2  8A           				TXA
+00E0F0  2  29 1F        				AND     #BUFF_SIZE-1
+00E0F2  2  85 00        				STA     RX_HEAD
+00E0F4  2  FA                           PLX
+00E0F5  2  68                           PLA
+00E0F6  2  40                           RTI
+00E0F7  2               
+00E0F7  2               
+00E0F7  2               	.segment "VECTORS"
+00E0F7  2               	.org $FFFA
+00FFFA  2  00 0F        	.WORD $F00   ; (NMI)
+00FFFC  2  00 E0        	.WORD RESET  ; (RESET)
+00FFFE  2  E2 E0        	.WORD RX_IRQ_HANDLER      ; (IRQ)
+010000  2               
+010000  2               
+010000  2               
+010000  2               
+010000  2               
+010000  1               
+010000  1               	.segment "DATA"
+010000  1               	; monitor variables
+010000  1               	.org 6
+000006  1  xx           	XAML: .res 1
+000007  1  xx           	XAMH: .res 1
+000008  1  xx           	STL: .res 1
+000009  1  xx           	STH: .res 1
+00000A  1  xx           	L: .res 1
+00000B  1  xx           	H: .res 1
+00000C  1  xx           	YSAV: .res 1
+00000D  1  xx           	MODE: .res 1
+00000E  1               
+00000E  1               
+00000E  1               	.segment "MONITOR"
+00000E  1               	.org $FF00
+00FF00  1               
+00FF00  1  70 6F 6D 6D  MON_INFO: .ASCIIZ "pomme 1+ monitor version 1.0R0"
+00FF04  1  65 20 31 2B  
+00FF08  1  20 6D 6F 6E  
+00FF1F  1               
+00FF1F  1               MONITOR:
+00FF1F  1  A9 00 85 02  	_puts MON_INFO
+00FF23  1  A9 FF 85 03  
+00FF27  1  20 60 E0     
+00FF2A  1  20 58 E0     	JSR NEW_LINE
+00FF2D  1               MON1:
+00FF2D  1  A9 23        	LDA #SHARP
+00FF2F  1  20 4D E0     	JSR PUTC
+00FF32  1               GETLINE:
+00FF32  1  20 86 E0     	JSR READLN
+00FF35  1  F0 F6        	BEQ MON1
+00FF37  1               PARSE_LINE:
+00FF37  1  A0 00        	LDY #0
+00FF39  1  80 04        	BRA NEXTITEM
+00FF3B  1               SETSTOR:
+00FF3B  1  0A           	ASL            ; multiply A by 2
+00FF3C  1               SETMODE:           ; set operation MODE
+00FF3C  1  85 0D        	STA MODE       ; 0 = XAM, $74 = STOR, $2E=BLOKXAM
+00FF3E  1               BLSKIP:
+00FF3E  1  C8           	INY            ; move Y index to next buffer character
+00FF3F  1               NEXTITEM:          ; parse next token
+00FF3F  1  B1 04        	LDA (TIB_PTR),Y
+00FF41  1  20 D7 E0     	JSR UPPER
+00FF44  1  C9 0D        	CMP #CR        ; if carriage return parsing done
+00FF46  1  F0 E5        	BEQ MON1       ; accept next input
+00FF48  1  C9 2E        	CMP #DOT       ; check for MODE character
+00FF4A  1  90 F2        	BCC BLSKIP     ;  if char < '.' char invalid, ignore it.
+00FF4C  1  F0 EE        	BEQ SETMODE    ; '.'  set MODE=BLOKXAM
+00FF4E  1  C9 3A        	CMP #COLUMN    ;  ':' character
+00FF50  1  F0 E9        	BEQ SETSTOR    ;  set MODE=STORE
+00FF52  1  C9 52        	CMP #LETTER_R  ; check for 'R'
+00FF54  1  F0 3A        	BEQ RUN        ; run application at XAM address
+00FF56  1  86 0A        	STX L          ; store input hex number in L:H
+00FF58  1  86 0B        	STX H
+00FF5A  1  84 0C        	STY YSAV       ; save Y
+00FF5C  1               NEXTHEX:           ; check for HEXADECIMAL digit
+00FF5C  1  B1 04        	LDA (TIB_PTR),Y
+00FF5E  1  49 30        	EOR #48        ; A=A-'0'
+00FF60  1  C9 0A        	CMP #10        ; if a<10 then
+00FF62  1  90 06        	BCC DIG        ; A in {0..9}
+00FF64  1  E9 07        	SBC #7         ; else A-7 map to {10..15}
+00FF66  1  C9 10        	CMP #16        ; if A>15 then
+00FF68  1  B0 11        	BCS NOTHEX     ;  this is not en HEX digit
+00FF6A  1               DIG:               ;  shift digit bit 7:4 of A
+00FF6A  1  0A           	ASL            ; shift A left 1 bit
+00FF6B  1  0A           	ASL            ; repeat 4 times
+00FF6C  1  0A           	ASL
+00FF6D  1  0A           	ASL
+00FF6E  1  A2 04        	LDX #4         ; shift count to transfert
+00FF70  1               HEXSHIFT:          ; this digit in L:H variable
+00FF70  1  0A           	ASL            ; A bit 7 in Carry
+00FF71  1  26 0A        	ROL L          ; carry in bit 0 of L and bit 7 in Carry
+00FF73  1  26 0B        	ROL H          ; Carry in bit 0 of H.
+00FF75  1  CA           	DEX            ; decrement X
+00FF76  1  D0 F8        	BNE HEXSHIFT   ; repeat 4 times
+00FF78  1  C8           	INY            ; move Y to next char in buffer
+00FF79  1  D0 E1        	BNE NEXTHEX    ; check if another HEX number
+00FF7B  1               NOTHEX:            ; Y rollover means buffer overflow
+00FF7B  1  C4 0C        	CPY YSAV       ; check there was an HEX number in buffer
+00FF7D  1  F0 B3        	BEQ GETLINE    ; if Y as not changed there was not
+00FF7F  1  24 0D        	BIT MODE       ; check for MODE state, A:7 in carry, A:6 in overflow
+00FF81  1  50 10        	BVC NOTSTOR    ; if bit 6 is cleared then not STORE
+00FF83  1  A5 0A        	LDA L 		   ; either XAM or BLOKXAM mode
+00FF85  1  81 08        	STA (STL,X)    ; save last address parsed in STL:STH
+00FF87  1  E6 08        	INC STL        ; increment STL:STH
+00FF89  1  D0 B4        	BNE NEXTITEM
+00FF8B  1  E6 09        	INC STH        ; STL overflowed then increment STH
+00FF8D  1               TONEXTITEM:        ; go to accept next buffer token
+00FF8D  1  4C 3F FF     	JMP NEXTITEM
+00FF90  1               RUN:               ; if RUN mode jmp here
+00FF90  1  6C 06 00     	JMP (XAML)     ; jump to address in XAM
+00FF93  1               NOTSTOR:           ; MODE is XAM or BLOKXAM?
+00FF93  1  D0 2B        	BNE XAMNEXT    ; if Z=0 -> BLOKXAM
+00FF95  1  A2 02        	LDX #2
+00FF97  1               SETADR:            ; copy Address from L:H to ST and XAM
+00FF97  1  B5 09        	LDA L-1,X
+00FF99  1  95 07        	STA STL-1,X
+00FF9B  1  95 05        	STA XAML-1,X
+00FF9D  1  CA           	DEX
+00FF9E  1  D0 F7        	BNE SETADR      ; 2 bytes to copy
+00FFA0  1               NXTPRNT:
+00FFA0  1  D0 14        	BNE PRDATA      ; if A==0 then end of line
+00FFA2  1  A9 0D        	LDA #CR         ; display 8 data bytes per line
+00FFA4  1  20 4D E0     	JSR PUTC        ; send carriage return to terminal
+00FFA7  1  A5 07        	LDA XAMH        ; print next address at start of next line
+00FFA9  1  20 D8 FF     	JSR PRBYTE      ; print address high byte
+00FFAC  1  A5 06        	LDA XAML        ; address low byte
+00FFAE  1  20 D8 FF     	JSR PRBYTE      ; print address low byte
+00FFB1  1  A9 3A        	LDA #COLUMN     ; display ':' after address
+00FFB3  1  20 4D E0     	JSR PUTC
+00FFB6  1               PRDATA:             ; print data byte to terminal
+00FFB6  1  A9 20        	LDA #SPACE      ; separate by a blank
+00FFB8  1  20 4D E0     	JSR PUTC
+00FFBB  1  A1 06        	LDA (XAML,X)    ; get data from memory
+00FFBD  1  20 D8 FF     	JSR PRBYTE      ; print it to terminal.
+00FFC0  1               XAMNEXT:            ; next data item
+00FFC0  1  86 0D        	STX MODE        ; here X==0, reset MODE to XAM.
+00FFC2  1  A5 06        	LDA XAML        ; compare XAM address with L:H address
+00FFC4  1  C5 0A        	CMP L           ; when equal no more data to display
+00FFC6  1  A5 07        	LDA XAMH        ; XAM high byte
+00FFC8  1  E5 0B        	SBC H           ; A=A-H-carry
+00FFCA  1  B0 C1        	BCS TONEXTITEM  ; XAM<L:H then next item
+00FFCC  1  E6 06        	INC XAML        ; increment XAM address
+00FFCE  1  D0 02        	BNE MOD8CHK     ; no overflow
+00FFD0  1  E6 07        	INC XAMH        ; XAML overflow, increment XAMH
+00FFD2  1               MOD8CHK:
+00FFD2  1  A5 06        	LDA XAML        ; load A with low byte of address
+00FFD4  1  29 07        	AND #7          ; Address modulo 8 (bytes per line)
+00FFD6  1  10 C8        	BPL NXTPRNT     ; alway taken
+00FFD8  1               PRBYTE:
+00FFD8  1  48           	PHA             ; save A on stack
+00FFD9  1               		            ; shift A7:4 in A3:0
+00FFD9  1  4A           	LSR             ; shift A 1 bit right
+00FFDA  1  4A           	LSR             ; repeat 4 times
+00FFDB  1  4A           	LSR
+00FFDC  1  4A           	LSR
+00FFDD  1  20 E1 FF     	JSR PRHEX      ; print high digit
+00FFE0  1  68           	PLA            ; pull low digit and print it.
+00FFE1  1               PRHEX:
+00FFE1  1  29 0F        	AND #$F        ; precaution an hex digit is 4 bits
+00FFE3  1  09 30        	ORA #48        ; add ASCII '0' to A
+00FFE5  1  C9 3A        	CMP #58        ; if <= ASCII '9'
+00FFE7  1  90 02        	BCC ECHO       ; print it
+00FFE9  1  69 06        	ADC #6         ; adjust to {'A'..'F'} range
+00FFEB  1               ECHO:
+00FFEB  1  20 4D E0     	JSR PUTC
+00FFEE  1  60           	RTS
+00FFEF  1               
+00FFEF  1               
+00FFEF  1               
+00FFEF  1               
+00FFEF  1               
+00FFEF  1               
+00FFEF  1               

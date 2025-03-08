@@ -4,95 +4,38 @@
 	
 	.PC02
 	
+	.include "bios.s"
 	
-	ACIA_DATA = $D000
-	ACIA_STATUS = $D001 
-	ACIA_CMD = $D002
-	ACIA_CR = $D003
+	.segment "DATA" 
+	; monitor variables 
+	.org 6
+	XAML: .res 1 
+	XAMH: .res 1
+	STL: .res 1 
+	STH: .res 1 
+	L: .res 1 
+	H: .res 1 
+	YSAV: .res 1 
+	MODE: .res 1
 	
-	; variables 
-	XAML = 4
-	XAMH = 5
-	STL  = 6 
-	STH  = 7
-	L    = 8
-	H    = 9
-	YSAV = $A
-	MODE = $B
-	IN   = $200
-	
-	; ASCII constant 
-	CTRL_C = 3
-	CR = 13 
-	BS = 8
-	ESC = 27
-	SPACE = 32 
-	BSLASH = $5C 
-	DOT = $2E
-	COLUMN = $3A 
-	LETTER_F = $46
-	LETTER_R = $52
 
-	.segment "CODE"
-	.org $E000 
-.PROC HELLO	
-	CLD   ; clear decimal mode
-	CLI   ; disable interrupts, not used 
-; SETUP ACIA FOR 115200 BAUD,8N1 
-	LDA #3         ; DTR ready, no IRQ
-	STA ACIA_CMD   ; 
-MSG_LOOP:
-	LDY #0       ; initialize Y to -2 
-MSG_LOOP2:
-	LDA (MSG,Y)
-	BEQ MSG_LOOP 
-	BSR ECHO 
-	INC Y 
-	BRA MSG_LOOP2 
-
-MSG: .asciiz "Hello world! "	
-.ENDPROC 
-	
-	.segment "WOZMON"
+	.segment "MONITOR"
 	.org $FF00
 	
-.PROC RESET	
-	CLD   ; clear decimal mode
-	CLI   ; disable interrupts, not used 
-; SETUP ACIA FOR 115200 BAUD,8N1 
-	LDA #3         ; DTR ready, no IRQ
-	STA ACIA_CMD   ; 
-	LDY #$FE       ; initialize Y to -2 
-NOTCR:             ; character input loop
-	CMP #BS        ; backspace ? 
-	BEQ BACKSPACE  ; yes then cursor left 
-	CMP #ESC       ; ESCAPE? 
-	BEQ ESCAPE    
-	INY            ; inc Y to accept next character in buffer
-	BPL NEXTCHAR 
-ESCAPE:            ; display '\' character 
-	LDA #BSLASH
-	JSR ECHO 
-GETLINE:           ; readline loop 
-	LDA #CR        ; move terminal cursor    
-	JSR ECHO       ; to start of next line
-	LDY #1         ; iniatilize Y to input buffer+1
-BACKSPACE:
-	DEY            ; cursor left 
-	BMI GETLINE    ; if back space empty line then start new line 
-	JSR ECHO       ; else move display cursor left.
-NEXTCHAR:          ; get next character 
-	LDA ACIA_STATUS ; wait loop until status bit "character received" set. 
-	AND #8         ; bit 3 is RX bit in ACIA status register.
-	BEQ NEXTCHAR   ; no character received yet.
-	LDA ACIA_DATA  ; read character from ACIA 
-	STA IN,Y       ; store it un buffer 
-	JSR ECHO       ; echo it to terminal 
-	CMP #CR        ; Carriage return ? 
-	BNE NOTCR 	   ; not end of line then test character 
-	LDY #$FF       ; end of line 
-	LDA #0         ; prepare for line parsing 
-	TAX            ; X=0
+MON_INFO: .ASCIIZ "pomme 1+ monitor version 1.0R0"
+
+MONITOR:
+	_puts MON_INFO 
+	JSR NEW_LINE 
+MON1:
+	LDA #SHARP 
+	JSR PUTC 
+GETLINE:
+	JSR READLN
+	BEQ MON1 
+PARSE_LINE:	
+	LDY #0 
+	BRA NEXTITEM 
 SETSTOR:
 	ASL            ; multiply A by 2 
 SETMODE:           ; set operation MODE 
@@ -100,9 +43,10 @@ SETMODE:           ; set operation MODE
 BLSKIP:
 	INY            ; move Y index to next buffer character 
 NEXTITEM:          ; parse next token 
-	LDA IN,Y
+	LDA (TIB_PTR),Y 
+	JSR UPPER 
 	CMP #CR        ; if carriage return parsing done 
-	BEQ GETLINE    ; accept next input 
+	BEQ MON1       ; accept next input 
 	CMP #DOT       ; check for MODE character 
 	BCC BLSKIP     ;  if char < '.' char invalid, ignore it.
 	BEQ SETMODE    ; '.'  set MODE=BLOKXAM 
@@ -114,7 +58,7 @@ NEXTITEM:          ; parse next token
 	STX H 
 	STY YSAV       ; save Y 
 NEXTHEX:           ; check for HEXADECIMAL digit 
-	LDA IN,Y
+	LDA (TIB_PTR),Y
 	EOR #48        ; A=A-'0' 
 	CMP #10        ; if a<10 then
 	BCC DIG        ; A in {0..9}
@@ -137,7 +81,7 @@ HEXSHIFT:          ; this digit in L:H variable
 	BNE NEXTHEX    ; check if another HEX number  
 NOTHEX:            ; Y rollover means buffer overflow 
 	CPY YSAV       ; check there was an HEX number in buffer 
-	BEQ ESCAPE     ; if Y as not changed there was not 
+	BEQ GETLINE    ; if Y as not changed there was not 
 	BIT MODE       ; check for MODE state, A:7 in carry, A:6 in overflow 
 	BVC NOTSTOR    ; if bit 6 is cleared then not STORE
 	LDA L 		   ; either XAM or BLOKXAM mode 
@@ -161,16 +105,16 @@ SETADR:            ; copy Address from L:H to ST and XAM
 NXTPRNT:            
 	BNE PRDATA      ; if A==0 then end of line 
 	LDA #CR         ; display 8 data bytes per line 
-	JSR ECHO        ; send carriage return to terminal
+	JSR PUTC        ; send carriage return to terminal
 	LDA XAMH        ; print next address at start of next line 
 	JSR PRBYTE      ; print address high byte 
 	LDA XAML        ; address low byte 
 	JSR PRBYTE      ; print address low byte 
 	LDA #COLUMN     ; display ':' after address 
-	JSR ECHO 
+	JSR PUTC  
 PRDATA:             ; print data byte to terminal  
 	LDA #SPACE      ; separate by a blank 
-	JSR ECHO 
+	JSR PUTC  
 	LDA (XAML,X)    ; get data from memory
 	JSR PRBYTE      ; print it to terminal.
 XAMNEXT:            ; next data item 
@@ -202,22 +146,11 @@ PRHEX:
 	CMP #58        ; if <= ASCII '9' 
 	BCC ECHO       ; print it
 	ADC #6         ; adjust to {'A'..'F'} range 
-ECHO:              ; send character to terminal 
-	STA ACIA_DATA 
-	PHX            ; save X on stack 
-	LDX #64        ; transmission delay, 320µsec/5cy  for Fclk=3.6864Mhz 
-DELAY:
-	DEX 		   ; 2cy
-	BNE DELAY      ; 3cy = 5cy 
-	PLX            ; pull X from stack 
-	RTS            ; done 
-	.ENDPROC 
-	
-	.segment "VECTORS" 
-	.org $FFFA    
-	.WORD $F00   ; (NMI)
-	.WORD $E000 ;$FF00  ; (RESET)
-	.WORD 0      ; (IRQ)
+ECHO:
+	JSR PUTC 
+	RTS 
+
+
 
 	
 	
