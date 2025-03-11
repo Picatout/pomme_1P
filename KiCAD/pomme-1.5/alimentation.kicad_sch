@@ -1523,7 +1523,7 @@
 				)
 			)
 		)
-		(property "Value" "Fuse"
+		(property "Value" "1/4 A"
 			(at 102.235 118.11 90)
 			(effects
 				(font
@@ -1567,6 +1567,12 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
+					(reference "F1")
+					(unit 1)
+				)
+			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
 					(reference "F1")
 					(unit 1)
 				)
@@ -1639,6 +1645,12 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "D1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -1704,6 +1716,12 @@
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
 					(reference "SW2")
+					(unit 1)
+				)
+			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "SW1")
 					(unit 1)
 				)
 			)
@@ -1784,6 +1802,12 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "T1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -1855,6 +1879,12 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "U1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -1918,6 +1948,12 @@
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
 					(reference "#PWR027")
+					(unit 1)
+				)
+			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "#PWR04")
 					(unit 1)
 				)
 			)
@@ -1991,6 +2027,12 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "C2")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -2054,6 +2096,12 @@
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
 					(reference "#PWR026")
+					(unit 1)
+				)
+			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "#PWR03")
 					(unit 1)
 				)
 			)
@@ -2127,6 +2175,12 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "C1")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -2193,6 +2247,12 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "#PWR02")
+					(unit 1)
+				)
+			)
 		)
 	)
 	(symbol
@@ -2255,6 +2315,12 @@
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
 					(reference "#PWR024")
+					(unit 1)
+				)
+			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "#PWR01")
 					(unit 1)
 				)
 			)
@@ -2326,6 +2392,17 @@
 					(unit 1)
 				)
 			)
+			(project "alimentation"
+				(path "/62504db6-7d57-4226-a69c-802abd89335e"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
 		)
 	)
 )
