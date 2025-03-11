@@ -3,6 +3,10 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-03-11
+
+* Complété schématique alimentation.
+
 ### 2025-03-08
 
 * Moniteur V1.0R0 débogué et fonctionnel.

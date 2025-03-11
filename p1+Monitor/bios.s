@@ -141,7 +141,7 @@ GETC:
 	TAX
 	LDA      IN,X 
 	PHA 
-	INX
+	INX                     ; update queue tail index 
 	TXA
 	AND     #BUFF_SIZE-1   
 	STA     RX_TAIL
@@ -251,12 +251,12 @@ RX1:
                 CMP     #127 
                 BPL     RX_DISCARD   ; ignore codes >126
 RX_ACCEPT:
-                LDX     RX_HEAD 
+                LDX     RX_HEAD ; update queue head index 
 				STA     IN,X 
 				INX
 				TXA 
 				AND     #BUFF_SIZE-1 
-				STA     RX_HEAD 
+				STA     RX_HEAD  
 NOT_ACIA:
 RX_DISCARD:
                 PLX
