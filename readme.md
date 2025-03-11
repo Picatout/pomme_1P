@@ -54,4 +54,8 @@ J'utilise l'assembleur [ca65](https://cc65.github.io/doc/ca65.html) pour le dév
 ### Continuation du dévelopement matériel
 Au final cet ordinateur aura son propre terminal intégré et sera monté dans un boitier en bois semblable à celui que j'ai fait pour le [pomme-I](https://github.com/Picatout/pomme-I).
 
+### 2025-03-11 vidéo de présention 
+
+[vidéo de présentation du pomme 1+](https://youtu.be/0cAoQgj5ZgQ)
+
 [début](#top)
