@@ -5,7 +5,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   NOTE: 
 ;;      ON NUCLEO_8S207K8 
-;;      JUMPERS  SB3,SB4 MUST BE MOVE ON SB7,SB9 
+;;      JUMPERS  SB3,SB4 MUST BE MOVED TO SB7,SB9 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 DEBUG=0 ; set to 1 to include debugging code 

@@ -9,7 +9,7 @@ Un terminal ASCII réalisé sur une carte NUCLEO-S207K8
 
 ### NOTE 
 
-On **nucleo_8S207K8** jumpers **SB3,SB4** must be moved to **SB7,SB9**.
+Sur la carte **nucleo_8S207K8** les cavaliers **SB3,SB4** doivent-être déplacés vers **SB7,SB9**.
 
 ![schématique](terminal_schematic.png)
 

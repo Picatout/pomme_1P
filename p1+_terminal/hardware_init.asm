@@ -314,7 +314,7 @@ ldw x,#width
 call tv_puts 
 ldw x,#test 
 call tv_puts 
-jra .   
+jp main  
 test: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\nThe quick bronw fox jump over the lazy dog.\n"
 width: .asciz "123456789012345678901234567890123456789012345678901234567890123456789012345"
 .endif ; TEST CODE 

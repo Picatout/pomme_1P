@@ -685,7 +685,7 @@ tv_puts:
 main:
     call keyboard_read
     jreq 2$
-    btjf ntsc_flags,#F_LECHO,1$ 
+;    btjf ntsc_flags,#F_LECHO,1$ 
     push a 
     call tv_print_char
     pop a 
