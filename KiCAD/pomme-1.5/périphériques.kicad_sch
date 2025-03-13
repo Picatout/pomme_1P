@@ -4718,7 +4718,7 @@
 		)
 		(uuid "62de0b54-c634-48ad-9941-307db776fe72")
 	)
-	(text "0x8000-0x8003"
+	(text "0xD000-0xD003"
 		(exclude_from_sim no)
 		(at 131.826 67.31 0)
 		(effects

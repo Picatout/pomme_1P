@@ -3,9 +3,16 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-03-12
+
+* Début du travails sur p1+_Terminal. Adaptation du [stm8_terminal](https://github.com/Picatout/stm8_terminal).
+
+
 ### 2025-03-11
 
 * Complété schématique alimentation.
+
+*Création d'une vidéo de présenstation du projet.
 
 ### 2025-03-08
 
