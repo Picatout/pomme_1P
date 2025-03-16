@@ -102,8 +102,8 @@ ntsc_init:
     mov TIM1_CCR1L,#HPULSE&0XFF
     call copy_font
 ; test for local echo option
-    btjf OPT_ECHO_PORT,#OPT_ECHO_BIT,1$
-    bset ntsc_flags,#F_LECHO
+    btjf ECHO_PORT,#ECHO_BIT,1$
+    bset ntsc_flags,#F_LECHO ; set local echo 
 1$:    
     call tv_cls 
     call tv_enable_cursor

@@ -6840,7 +6840,7 @@
 			)
 		)
 	)
-	(global_label "ACIA_SEL"
+	(global_label "~{p_select}"
 		(shape input)
 		(at 191.77 135.89 0)
 		(fields_autoplaced yes)
@@ -6852,7 +6852,7 @@
 		)
 		(uuid "68104ab8-a118-4716-be89-4cf537de7851")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 200.8829 135.89 0)
+			(at 200.3992 135.89 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11946,44 +11946,6 @@
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2"
 					(page "3")
-				)
-			)
-		)
-	)
-	(sheet
-		(at 137.16 19.05)
-		(size 26.67 10.16)
-		(fields_autoplaced yes)
-		(stroke
-			(width 0.1524)
-			(type solid)
-		)
-		(fill
-			(color 0 0 0 0.0000)
-		)
-		(uuid "e2b0b050-9ee9-484a-b76f-f7be59a136f7")
-		(property "Sheetname" "drive"
-			(at 137.16 18.3384 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left bottom)
-			)
-		)
-		(property "Sheetfile" "drive.kicad_sch"
-			(at 137.16 29.7946 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left top)
-			)
-		)
-		(instances
-			(project "pomme-1.5"
-				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2"
-					(page "5")
 				)
 			)
 		)

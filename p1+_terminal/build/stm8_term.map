@@ -21,9 +21,9 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000001  s_DATA                          
      00000080  l_HOME                          
      00000080  l_SSEG0                         
-     00000091  l_DATA1                         
+     00000092  l_DATA1                         
      00000EA6  l_DATA3                         
-     000014CB  l_CODE                          
+     000014B5  l_CODE                          
      00008000  s_HOME                          
      00008080  s_CODE                          
 
@@ -52,7 +52,7 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-DATA1                               00000000    00000091 =         145. bytes (ABS,CON)
+DATA1                               00000000    00000092 =         146. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
@@ -75,23 +75,23 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    000014CB =        5323. bytes (REL,CON)
+CODE                                00008080    000014B5 =        5301. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     000081F7  strlen                             HW_INIT
-     00008202  strcmp                             HW_INIT
-     00008211  strcpy                             HW_INIT
-     00008221  move                               HW_INIT
-     00008270  is_alpha                           HW_INIT
-     00008281  is_digit                           HW_INIT
-     0000828A  is_hex_digit                       HW_INIT
-     00008298  is_alnum                           HW_INIT
-     00008E1B  uart_putc                          HW_INIT
-     00008E47  qgetc                              HW_INIT
-     00008E47  uart_qgetc                         HW_INIT
-     00008E4D  getc                               HW_INIT
-     00008E4D  uart_getc                          HW_INIT
+     00008204  strlen                             HW_INIT
+     0000820F  strcmp                             HW_INIT
+     0000821E  strcpy                             HW_INIT
+     0000822E  move                               HW_INIT
+     0000827D  is_alpha                           HW_INIT
+     0000828E  is_digit                           HW_INIT
+     00008297  is_hex_digit                       HW_INIT
+     000082A5  is_alnum                           HW_INIT
+     00008E00  uart_putc                          HW_INIT
+     00008E2C  qgetc                              HW_INIT
+     00008E2C  uart_qgetc                         HW_INIT
+     00008E32  getc                               HW_INIT
+     00008E32  uart_getc                          HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
 

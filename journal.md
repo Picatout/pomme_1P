@@ -3,6 +3,28 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-03-16
+
+* Remplacé le p1+_drive par un nouveau circuit utilisant un STM8S207K8T et une carte µSD pour le stockage des programme.
+
+![p1+ drive](p1+_drive/p1+_drive.png)
+
+* Modifié schématique du p1+_terminal. Ajout d'un transistor 2n3904 à la sortie TX pour permettre le partage de l'entrée ACIA_RX par plusieurs périphériques. Simulation d'un bus Open drain. 
+
+![p1+_terminal](p1+_terminal/terminal_schematic.png)
+
+### 2025-03-15
+
+* J'ai pris la décision d'utiliser le même terminal que pour le pomme I avec quelques modifications.
+  * la vitesse BAUD sera fixée à 115200
+  * Les switches qui servaient à sélectionner le BAUD serviront à sélectionner un indentifiant de périphérique {0..3}.
+  * Le terminal et le drive seront montés sur la même carte et utiliseront le même port sériel pour communiquer avec l'ACIA d'ou le besoin d'avoir un identifiant différent pour chacun d'eux. Les firmware du drive et du terminal ne répondront qu'aux messages identifiés par leur identifiant respectifs.
+<hr>
+
+* Travail sur la schématique et le firmware du **p1+_terminal**.
+
+* Travail sur la schématique du **p1+_drive**.
+
 ### 2025-03-13
 
 * Création du sous projet [p1+_drive](p1+_drive). 

@@ -133,6 +133,7 @@ RX_QUEUE_SIZE=64
 rx1_queue: .ds RX_QUEUE_SIZE ; UART1 receive circular queue 
 rx1_head:  .blkb 1 ; rx1_queue head pointer
 rx1_tail:   .blkb 1 ; rx1_queue tail pointer  
+dev_id:  .blkb 1 ; device identifier {0..3}, default 3  
 
 ; free ram for user font 
 	.org 256 
@@ -143,6 +144,13 @@ video_buffer: .blkw CHAR_PER_LINE*LINE_PER_SCREEN
 
 
 	.area CODE 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; do nothing interrupt UartRxHandler
+; debug support 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+DoNothing:
+	iret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; non handled interrupt 
@@ -285,13 +293,20 @@ cold_start:
 	ld PA_CR1,a 
 	ld PB_CR1,a 
 	ld PC_CR1,a 
-	ld PD_CR1,a 
+	ld PD_CR1,a
 	ld PE_CR1,a 
 	ld PF_CR1,a 
 	ld PG_CR1,a 
 	ld PI_CR1,a
+	bres PD_CR1,#5 ; uart_tx 
     bres PD_CR1,#3 ; connected to PC6 
     bres PE_CR1,#5 ; connected to PD4 
+; read device id switches 
+	ld a,#DEV_ID_PORT
+	and a, #((1<<DEV_ID0_BIT)+(1<<DEV_ID1_BIT))
+	srl a 
+	srl a 
+	_straz dev_id  
 ; set user LED pin as output 
     bset LED_PORT+GPIO_CR1,#LED_BIT
     bset LED_PORT+GPIO_CR2,#LED_BIT

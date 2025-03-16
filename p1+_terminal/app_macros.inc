@@ -26,6 +26,20 @@
 	STACK_EMPTY=RAM_SIZE-1  
 	
 
+; external options switches 
+
+; select local  echo option 
+; 0 no echo | 1 local echo 
+ECHO_PORT=PD_IDR 
+ECHO_BIT=0 
+
+; select device ID 
+DEV_ID_PORT=PB_IDR 
+DEV_ID0_BIT=2 
+DEV_ID1_BIT=3
+; default device ID 
+DEV_ID=3<<2
+
 ;--------------------------------------
 ;   assembler flags 
 ;-------------------------------------

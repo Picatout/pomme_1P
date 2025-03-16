@@ -1,0 +1,9 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "W65Cxx")(type "KiCad")(uri "${KIPRJMOD}/W65Cxx.kicad_sym")(options "")(descr ""))
+  (lib (name "memory")(type "KiCad")(uri "${KIPRJMOD}/memory.kicad_sym")(options "")(descr ""))
+  (lib (name "logic_gate")(type "KiCad")(uri "${KIPRJMOD}/logic_gate.kicad_sym")(options "")(descr ""))
+  (lib (name "my74HCxx")(type "KiCad")(uri "${KIPRJMOD}/my74HCxx.kicad_sym")(options "")(descr ""))
+  (lib (name "stm8s103f3")(type "KiCad")(uri "${KIPRJMOD}/stm8s103f3.kicad_sym")(options "")(descr ""))
+  (lib (name "W25Q80DV")(type "KiCad")(uri "${KIPRJMOD}/W25Q80DV.kicad_sym")(options "")(descr ""))
+)
