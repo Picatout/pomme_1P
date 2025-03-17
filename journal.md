@@ -5,6 +5,8 @@ https://github.com/picatout/pomme-1P
 -->
 ### 2025-03-16
 
+* Corrigé schématique de p1+_drive, régulateur de tension 3.3V et adapteurs de niveaux ajoutés pour interfacé carte SD. 
+
 * Remplacé le p1+_drive par un nouveau circuit utilisant un STM8S207K8T et une carte µSD pour le stockage des programme.
 
 ![p1+ drive](p1+_drive/p1+_drive.png)
