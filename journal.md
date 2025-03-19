@@ -3,11 +3,19 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-03-18
+
+* Modification du circuit du p1+_drive qui fonctionnera entièrment sur 3.3V au lieu de 5V.
+
+* Montage partiel du p1+_drive sur carte sans soudure pour début programmation.
+
+
+
 ### 2025-03-16
 
 * Corrigé schématique de p1+_drive, régulateur de tension 3.3V et adapteurs de niveaux ajoutés pour interfacé carte SD. 
 
-* Remplacé le p1+_drive par un nouveau circuit utilisant un STM8S207K8T et une carte µSD pour le stockage des programme.
+* Remplacé le p1+_drive par un nouveau circuit utilisant un STM8S207K8T et une carte µSD pour le stockage des programmes.
 
 ![p1+ drive](p1+_drive/p1+_drive.png)
 

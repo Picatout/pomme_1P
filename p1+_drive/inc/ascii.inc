@@ -85,12 +85,5 @@
 	 COMMA = 44 
 	 SHARP = 35
 	 TICK = 39
-
-	DOT = $2E
-	COLUMN = $3A
-	; upper case letters 
-    ; add $20 for lower letters
-    LOWER = $20  
-    LETTER_C = $43 ; upper 
-	LETTER_F = $46 ; upper 
-	LETTER_R = $52 ; upper 
+;	 DOT = $2E
+;	 COLUMN = $3A

@@ -45,20 +45,6 @@ UartRxHandler: ; console receive char
 	_straz rx1_tail
 5$:	iret 
 
-.if MAX_FREQ 
-; values for 24Mhz FMSTR  
-;   			BRR2,BRR1 
-baud_rate: .byte 0x4,0x9c ; 0x9C4 ; 9600 
- 		   .byte 0x2,0x4e ; 0x4E2 ; 19200
-		   .byte 0x1,0x27 ; 0x271 ; 38400
-		   .byte 0x0,0x0d ; 0xD0  ; 115200
-.else 
-baud_rate: ; for 20Mhz 
-			.byte 0x3,0x82 ; 0x823 ; 9600 
-			.byte 0x2,0x41 ; 0x412 ; 19200
-			.byte 0x9,0x20 ; 0x209 ; 38400 
-			.byte 0xe,0x0a ; 0xae  ; 115200
-.endif 
 ;---------------------------------------------
 ; initialize UART, read external swtiches SW4,SW5 
 ; to determine required BAUD rate.
@@ -71,36 +57,16 @@ baud_rate: ; for 20Mhz
 BAUD_RATE=115200 
 uart_init:
 ; enable UART clock
-	bset CLK_PCKENR1,#UART_PCKEN 	
-	bres UART,#UART_CR1_PIEN
-; read external swtiches baud rate option.  
-	clr a 
-	rcf 
-	btjf OPT_BR1_PORT,#OPT_BR1_BIT, 2$ 
-	scf 
-2$:	rlc a 
-    rcf 
-	btjf OPT_BR0_PORT,#OPT_BR0_BIT,3$ 
-	scf 
-3$: rlc a 
+	bset CLK_PCKENR1,#UART_PCKEN
 ; get BRR value from table 
-	sll a 
-	push a
-	push #0 
-	ldw x,#baud_rate
-	addw x,(1,sp)
-	_drop 2 
-	ld a,(x)
+	ld a,#0xB
 	ld UART_BRR2,a 
-	ld a,(1,x)
+	ld a,#0x8
 	ld UART_BRR1,a 
     clr UART_DR
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
-	bset UART_CR2,#UART_CR2_SBK
-    btjf UART_SR,#UART_SR_TC,.
     clr rx1_head 
 	clr rx1_tail
-	bset UART,#UART_CR1_PIEN
 	ret
 
 
