@@ -3,6 +3,12 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-03-19
+
+* Modification du design 
+  * Ajout d'un PIA **W65C22**  au peripheral board.
+  * Modification de l'alimentation pour ajouter un régulateur de tension 3.3V.
+
 ### 2025-03-18
 
 * Modification du circuit du p1+_drive qui fonctionnera entièrment sur 3.3V au lieu de 5V.
