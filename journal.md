@@ -8,7 +8,10 @@ https://github.com/picatout/pomme-1P
 * Modification du design 
   * Ajout d'un PIA **W65C22**  au peripheral board.
   * Modification de l'alimentation pour ajouter un régulateur de tension 3.3V.
+  * Complété l'assemblage de la modification
 
+  ![montage révison 2](docs/montage%20révision%202(1).jpg)
+  
 ### 2025-03-18
 
 * Modification du circuit du p1+_drive qui fonctionnera entièrment sur 3.3V au lieu de 5V.

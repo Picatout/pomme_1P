@@ -11,7 +11,12 @@ En 2023/24 j'ai développé l'ordinateur [pomme-I](https://github.com/Picatout/p
 
 J'ai effectué le montage sur 3 cartes de prototypage pleine longueur [Ptsolns](https://ptsolns.com/fr/products/proto-full-basic) collée l'une à l'autre par la tranche pour former un ensemble mesurant 17,5 x 20 cm. 
 
-![assemblage](docs/montage-pomme-I+.jpg)
+### Assemblage résivé
+* Ajout du PIA W65C22
+* Remplacé socket du EEPROM par un socket ZIF
+* Remplacé socket du EEPROM optionnel par un DIP-28 300mil au lieu du DIP28 600 mil.
+
+![assemblage](docs/montage%20révision%202(1).jpg)
 
 * La carte centrale comprend l'oscillateur *system clock* le *MPU* ainsi que le *décodeur d'adresses*.
 * La carte de droite contient la mémoire **RAM** et **EEPROM**
