@@ -1980,7 +1980,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "1b778570-a5d0-4e92-aa40-963d7352df78")
-		(property "Reference" "U15"
+		(property "Reference" "U6"
 			(at 176.022 91.186 0)
 			(effects
 				(font
@@ -2035,7 +2035,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "U15")
+					(reference "U6")
 					(unit 1)
 				)
 			)
@@ -2281,7 +2281,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "4ccde575-b57e-4ff5-a620-8573aaff0875")
-		(property "Reference" "U13"
+		(property "Reference" "U7"
 			(at 175.768 121.158 0)
 			(effects
 				(font
@@ -2336,7 +2336,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "U13")
+					(reference "U7")
 					(unit 1)
 				)
 			)
@@ -2358,7 +2358,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "78dff0d8-e5db-4c8a-ba57-7d67f7db20ed")
-		(property "Reference" "#PWR027"
+		(property "Reference" "#PWR016"
 			(at 191.77 142.875 0)
 			(effects
 				(font
@@ -2408,7 +2408,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "#PWR027")
+					(reference "#PWR016")
 					(unit 1)
 				)
 			)
@@ -2429,7 +2429,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "9605f559-2eea-45d8-a39b-e792d74d9b43")
-		(property "Reference" "C35"
+		(property "Reference" "C17"
 			(at 194.945 98.1709 0)
 			(effects
 				(font
@@ -2483,7 +2483,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "C35")
+					(reference "C17")
 					(unit 1)
 				)
 			)
@@ -2499,7 +2499,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "9f94e7ab-36c0-4ce1-a3f5-f123ad3009e0")
-		(property "Reference" "#PWR030"
+		(property "Reference" "#PWR015"
 			(at 191.77 114.3 0)
 			(effects
 				(font
@@ -2549,7 +2549,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "#PWR030")
+					(reference "#PWR015")
 					(unit 1)
 				)
 			)
@@ -2565,7 +2565,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a4099f41-24e2-4abe-9d29-0c8fac324ce4")
-		(property "Reference" "C34"
+		(property "Reference" "C18"
 			(at 194.945 128.6509 0)
 			(effects
 				(font
@@ -2619,7 +2619,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "C34")
+					(reference "C18")
 					(unit 1)
 				)
 			)
@@ -2641,7 +2641,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "a58b8f1b-7054-4fba-bfaa-aab4ca621649")
-		(property "Reference" "#PWR026"
+		(property "Reference" "#PWR014"
 			(at 176.53 142.875 0)
 			(effects
 				(font
@@ -2691,7 +2691,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "#PWR026")
+					(reference "#PWR014")
 					(unit 1)
 				)
 			)
@@ -2713,7 +2713,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "b77c6214-8903-48f5-944f-a41f2ab7bc51")
-		(property "Reference" "C33"
+		(property "Reference" "C16"
 			(at 156.845 128.6509 0)
 			(effects
 				(font
@@ -2767,7 +2767,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "C33")
+					(reference "C16")
 					(unit 1)
 				)
 			)
@@ -2789,7 +2789,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c58e3dcc-ac3d-4443-b1f1-4aa98c22b334")
-		(property "Reference" "#PWR025"
+		(property "Reference" "#PWR012"
 			(at 153.67 144.145 0)
 			(effects
 				(font
@@ -2839,7 +2839,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "#PWR025")
+					(reference "#PWR012")
 					(unit 1)
 				)
 			)
@@ -2861,7 +2861,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d7431894-5f46-4596-bbeb-0f41800351c9")
-		(property "Reference" "J3"
+		(property "Reference" "J2"
 			(at 218.44 110.4899 0)
 			(effects
 				(font
@@ -2918,7 +2918,7 @@
 		(instances
 			(project ""
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "J3")
+					(reference "J2")
 					(unit 1)
 				)
 			)
@@ -2933,7 +2933,7 @@
 		(on_board yes)
 		(dnp no)
 		(uuid "e4ea91a7-c602-4ea0-9db1-1cdf9f5c2f3e")
-		(property "Reference" "#PWR024"
+		(property "Reference" "#PWR011"
 			(at 130.81 150.495 0)
 			(effects
 				(font
@@ -2983,7 +2983,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "#PWR024")
+					(reference "#PWR011")
 					(unit 1)
 				)
 			)
@@ -3005,7 +3005,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "ee31a398-4a88-4f51-a2b4-fe089a53b575")
-		(property "Reference" "#PWR029"
+		(property "Reference" "#PWR013"
 			(at 176.53 114.3 0)
 			(effects
 				(font
@@ -3055,7 +3055,7 @@
 		(instances
 			(project "pomme-1.5"
 				(path "/46a37b86-f1f5-4cd9-9809-f219c84ab6f2/4c0c8659-beea-403b-8bf2-6163dd8a3614"
-					(reference "#PWR029")
+					(reference "#PWR013")
 					(unit 1)
 				)
 			)
