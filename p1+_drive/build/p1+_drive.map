@@ -8,7 +8,6 @@ Area                                    Addr        Size        Decimal Bytes (A
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
      00000000  .__.ABS.                           HW_INIT
-     00000000  l_DATA                          
      00000000  l_SSEG                          
      00000000  l__CODE                         
      00000000  s_DATA1                         
@@ -16,12 +15,16 @@ Area                                    Addr        Size        Decimal Bytes (A
      00000000  s_SSEG0                         
      00000000  s__CODE                         
      00000001  s_DATA                          
-     00000047  l_DATA1                         
+     00000002  l_DATA                          
+     0000004A  l_DATA1                         
      00000080  l_HOME                          
      00000080  l_SSEG0                         
-     0000022D  l_CODE                          
+     00000492  l_CODE                          
+     00001100  l_DATA2                         
      00008000  s_HOME                          
      00008080  s_CODE                          
+     00008512  s_DATA2                         
+
 ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
 Hexadecimal  [32-Bits]
 
@@ -47,45 +50,76 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-DATA1                               00000000    00000047 =          71. bytes (ABS,CON)
+DATA                                00000001    00000002 =           2. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     00000004  acc16                              HW_INIT
-     00000005  acc8                               HW_INIT
-     00000006  ptr16                              HW_INIT
-     00000008  flags                              HW_INIT
-
 ASxxxx Linker V03.00 + NoICE + sdld,  page 5.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    0000022D =         557. bytes (REL,CON)
+DATA1                               00000000    0000004A =          74. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     0000813A  strlen                             HW_INIT
-     00008145  strcmp                             HW_INIT
-     00008154  strcpy                             HW_INIT
-     00008164  move                               HW_INIT
-     000081B3  is_alpha                           HW_INIT
-     000081C4  is_digit                           HW_INIT
-     000081CD  is_hex_digit                       HW_INIT
-     000081DB  is_alnum                           HW_INIT
-     0000821B  uart_putc                          HW_INIT
-     00008247  qgetc                              HW_INIT
-     00008247  uart_qgetc                         HW_INIT
-     0000824D  getc                               HW_INIT
-     0000824D  uart_getc                          HW_INIT
+     00000004  acc16                              HW_INIT
+     00000005  acc8                               HW_INIT
+     00000007  ptr16                              HW_INIT
+     00000009  flags                              HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 6.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+CODE                                00008080    00000492 =        1170. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     0000813C  strlen                             HW_INIT
+     00008147  strcmp                             HW_INIT
+     00008156  strcpy                             HW_INIT
+     00008166  move                               HW_INIT
+     000081B5  is_alpha                           HW_INIT
+     000081C6  is_digit                           HW_INIT
+     000081CF  is_hex_digit                       HW_INIT
+     000081DD  is_alnum                           HW_INIT
+     00008227  uart_putc                          HW_INIT
+     00008257  qgetc                              HW_INIT
+     00008257  uart_qgetc                         HW_INIT
+     0000825D  getc                               HW_INIT
+     0000825D  uart_getc                          HW_INIT
+     000082BD  spi_init                           HW_INIT
+     000082F6  spi_disable                        HW_INIT
+     00008316  spi_clear_error                    HW_INIT
+     00008322  spi_send_byte                      HW_INIT
+     00008338  spi_rcv_byte                       HW_INIT
+     00008342  create_bit_mask                    HW_INIT
+     00008351  spi_select_device                  HW_INIT
+     00008363  close_channel                      HW_INIT
+     00008373  spi_send_addr                      HW_INIT
+     000083A6  flash_write                        HW_INIT
+     000083CA  flash_read                         HW_INIT
+     00008456  flash_chip_erase                   HW_INIT
+     0000848B  addr_to_page                       HW_INIT
+
+ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+DATA2                               00008512    00001100 =        4352. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00 + NoICE + sdld,  page 8.
 
 Files Linked                              [ module(s) ]
 
 build/p1+_drive.rel                       [ HW_INIT ]
 
-ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
+ASxxxx Linker V03.00 + NoICE + sdld,  page 9.
 
 User Base Address Definitions
 

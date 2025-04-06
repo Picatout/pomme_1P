@@ -33,11 +33,17 @@
 ;--------------------------
 UartRxHandler: ; console receive char 
 	btjf UART_SR,#UART_SR_RXNE,5$ 
+	ld a,UART_DR 
+	cp a,#CTRL_X 
+	jrne 1$ 
+	_swreset
+1$:	
+	push a
 	ld a,#rx1_queue 
 	add a,rx1_tail 
 	clrw x 
 	ld xl,a 
-	ld a,UART_DR 
+	pop a  
 	ld (x),a 
 	_ldaz rx1_tail 
 	inc a 
@@ -81,6 +87,10 @@ uart_putc::
 	ld UART_DR,a 
 	ret 
 
+uart_new_line:
+	ld a,#CR 
+	jra uart_putc 
+
 ;-------------------------
 ; delete character left 
 ;-------------------------
@@ -114,6 +124,8 @@ uart_space:
 	ld a,#SPACE 
 	call uart_putc 
 	ret 
+
+
 
 ;---------------------------------
 ; Query for character in rx1_queue

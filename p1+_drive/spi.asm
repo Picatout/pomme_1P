@@ -1,19 +1,19 @@
 ;;
 ; Copyright Jacques Deschênes 2025 
-; This file is part of p1+_drive 
+; This file is part of pomme_1+ 
 ;
-;     p1+_drive is free software: you can redistribute it and/or modify
+;     pomme_1+ is free software: you can redistribute it and/or modify
 ;     it under the terms of the GNU General Public License as published by
 ;     the Free Software Foundation, either version 3 of the License, or
 ;     (at your option) any later version.
 ;
-;     p1+_drive is distributed in the hope that it will be useful,
+;     pomme_1+ is distributed in the hope that it will be useful,
 ;     but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;     GNU General Public License for more details.
 ;
 ;     You should have received a copy of the GNU General Public License
-;     along with p1+_drive.  If not, see <http://www.gnu.org/licenses/>.
+;     along with pomme_1+.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
 ;-------------------------------
@@ -26,7 +26,9 @@
 
     .module SPI    
 
-    .area CODE 
+;-------------------------
+;  SPI interface 
+;-------------------------
 ; SPI port 
 SPI_PORT= PC_BASE
 SPI_ODR=PC_ODR 
@@ -34,34 +36,55 @@ SPI_IDR=PC_IDR
 SPI_DDR=PC_DDR 
 SPI_CR1=PC_CR1 
 SPI_CR2=PC_CR2 
-
+; spi pins bits 
+SPI_MISO= 7;PC7 
+SPI_MOSI= 6;PC6
+SPI_CLK=  5;PC5 
 ; SPI channel select pins 
-SPI_CS0=3   ; PC3 EEPROM0 fixed internal 
-SPI_CS1=4   ; PC4 EEPROM1 external 
+SPI_CS0=3   ; PC3 FLASH0  
+SPI_CS1=4   ; PC4 FLASH1  
+FLASH0=SPI_CS0 ; fixed internal
+FLASH1=SPI_CS1 ; removable external 
 
-; IC PARAMETERS 
-EEPROM_ADR_SIZE=3 ; address size in bytes for W25Q80DV 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; W25Q FLASH memory parameters 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+W25Q_PAGE_SIZE=256 ; bytes 
+W25Q_ERASE_BLOCK_SIZE=4096 ; byts 
+W25Q_ADR_SIZE=3 ; address size in bytes 
 ;-----------------------------------------------
 ; W25Q80DV programming
 ; 1) set /CS TO 0  
 ; 2) enable FLASH WRITE with WREN cmd 
 ; 3) send 24 bits address most significant byte first  
-; 4) send data bytes up to PAGE_SIZE 
+; 4) send data bytes up to W25Q_PAGE_SIZE 
 ; 5) rise /CS to 1  
 ;-----------------------------------------------
-PAGE_SIZE=256 ; programming page size 
-SECTOR_SIZE=4096 ; bytes 
-SR1_BUSY=0  ; busy writting/erasing  
-SR1_WEL=1  ; write enable active  
-; eeprom commands 
-EEPROM_WREN=6      ; set WEL bit 
-EEPROM_READ=3  ; can read sequential address no size limit.
-EEPROM_WRITE=2 ; program up to PAGE_SIZE at once.
-SECT_ERASE=0x20   ; erase 4KB sector  
-B32K_ERASE=0x52 ; erase 32KB block 
-B64K_ERASE=0XD8 ; erase 64KB block 
-CHIP_ERASE=0xC7   ; whole memory  
+W25Q_SECTOR_SIZE=4096 ; bytes 
+SR1_BUSY=0  ; busy writting/erasing bit position in SR1   
+SR1_WEL=1  ; write enable bit position in SR1  
+; W25Q commands 
+W25Q_WREN=6      ; set WEL bit 
+W25Q_READ=3  ; can read sequential address no size limit.
+W25Q_WRITE=2 ; program up to W25_PAGE_SIZE at once.
+W25Q_B4K_ERASE=0x20   ; erase 4KB block   
+W25Q_B32K_ERASE=0x52 ; erase 32KB block 
+W25Q_B64K_ERASE=0XD8 ; erase 64KB block 
+W25Q_CHIP_ERASE=0xC7   ; whole memory  
+W25Q_READ_SR1=6 ; read status register 1
+W25Q_JEDEC_ID=0x9F ; 
+	.area DATA 
+flash_size: .blkb 1 ; in MB
+spi_device: .blkb 1 ; selected spi device 
+
+	.area DATA 
+	.org 0x100  
+
+flash_buffer: .blkb W25Q_SECTOR_SIZE ; 4096 bytes 
+
+
+    .area CODE 
 
 
 ;---------------------------------
@@ -72,34 +95,32 @@ CHIP_ERASE=0xC7   ; whole memory
 ; output:
 ;    none 
 ;--------------------------------- 
-spi_enable::
+spi_init::
 	bset CLK_PCKENR1,#CLK_PCKENR1_SPI ; enable clock signal 
 ; configure ~CS  
-	bres PB_CR1,#SPI_CS_RAM ; 10K external pull up  
-	bset PB_DDR,#SPI_CS_RAM 
-	bset PB_ODR,#SPI_CS_RAM   ; deselet channel 
-	bres PB_CR1,#SPI_CS_EEPROM ; 10K external pull up  
-	bset PB_DDR,#SPI_CS_EEPROM  
-	bset PB_ODR,#SPI_CS_EEPROM  ; deselect channel 
-; ~CS line controlled by sofware 	
-	bset SPI_CR2,#SPI_CR2_SSM 
-    bset SPI_CR2,#SPI_CR2_SSI 
-; configure SPI as master mode 0.	
-	bset SPI_CR1,#SPI_CR1_MSTR
-; enable SPI
-	clr SPI_ICR 
-	bset SPI_CR1,#SPI_CR1_SPE 	
+;	bres SPI_CR1,#SPI_CS0 ; 10K external pull up  
+	bset SPI_DDR,#SPI_CS0 
+	bset SPI_ODR,#SPI_CS0   ; deselet channel 
+;	bres SPI_CR1,#SPI_CS1 ; 10K external pull up  
+	bset SPI_DDR,#SPI_CS1  
+	bset SPI_ODR,#SPI_CS1  ; deselect channel 
+; interrupts not used 
+	clr SPI_ICR ; no interrupt enabled 
+; master/slave mode controlled by sofware 	
+ret 
+	ld a,#(1<<SPI_CR2_SSM)+(1<<SPI_CR2_SSI) ; master mode 
+	ld SPI_CR2,a 
+ld a,SPI_CR2
+call uart_print_hex_byte 	
+; configure SPI as master mode 0 and enable.	
+	ld a,#(1<<SPI_CR1_MSTR)+(1<<SPI_CR1_SPE)
+	ld SPI_CR1,a 
 	btjf SPI_SR,#SPI_SR_RXNE,9$ 
 	ld a,SPI_DR 
-9$: ld a,#RW_MODE_SEQ
-	call spi_ram_set_mode 
-	call spi_ram_read_mode 
-	cp a,#RW_MODE_SEQ
-	jreq 10$  
-	ldw x,#spi_mode_failed 
-	call puts 
-	jra . 
-10$:
+;select default device 
+9$:	ld a,#FLASH0  ; internal flash memory 
+	call create_bit_mask
+	_straz spi_device 
 	ret 
 
 ;----------------------------
@@ -112,8 +133,8 @@ spi_disable::
 	btjt SPI_SR,#SPI_SR_BSY,.
 	bres SPI_CR1,#SPI_CR1_SPE
 	bres CLK_PCKENR1,#CLK_PCKENR1_SPI 
-	bres PB_DDR,#SPI_CS_RAM 
-	bres PB_DDR,#SPI_CS_EEPROM  
+	bres SPI_DDR,#SPI_CS0 
+	bres SPI_DDR,#SPI_CS1  
 	ret 
 
 ;------------------------
@@ -149,7 +170,7 @@ spi_send_byte::
 ;    A 
 ;------------------------------
 spi_rcv_byte::
-	ld a,#255
+	clr a 
 	btjf SPI_SR,#SPI_SR_RXNE,spi_send_byte 
 	ld a,SPI_DR 
 	ret
@@ -174,171 +195,94 @@ create_bit_mask::
 	ret 
 
 ;-------------------------------
-; SPI select channel 
+; SPI select device  
 ; input:
-;   A    channel SPI_CS_RAM || 
-;                SPI_CS_EEPROM 
+;   A    device FLASH0 || 
+;               FLASH1 
 ;--------------------------------
-spi_select_channel::
-	call create_bit_mask 
-	cpl a  
-	push a 
-	ld a,PB_ODR 
-	and a,(1,sp)
-	ld PB_ODR,a 
-	_drop 1 
+spi_select_device::
+	call create_bit_mask
+	_straz spi_device 
 	ret 
+
+;--------------------------
+; open selected channel 
+;--------------------------
+open_channel:
+	push a 
+	_ldaz spi_device 
+	cpl a  
+	and a,SPI_ODR 
+	ld SPI_ODR,a 
+	pop a  
+	ret 
+
 
 ;------------------------------
 ; SPI deselect channel 
-; input:
-;   A    channel SPI_CS_RAM ||
-; 				 SPI_CS_EEPROM 
 ;-------------------------------
-spi_deselect_channel::
+close_channel::
+	push a 
 	btjt SPI_SR,#SPI_SR_BSY,.
-	call create_bit_mask 
-	push a 
-	ld a,PB_ODR 
-	or a,(1,sp)
-	ld PB_ODR,a 
-	_drop 1 
+	_ldaz spi_device 
+	or a,SPI_ODR 
+	ld SPI_ODR,a 
+	pop a  
 	ret 
-
-;----------------------------
-; set spi RAM operating mode 
-; input:
-;   A     mode byte 
-;----------------------------
-spi_ram_set_mode:: 
-	push a 
-	ld a,#SPI_CS_RAM 
-	call spi_select_channel
-	ld a,#SPI_SDCARD_WRMOD
-	call spi_send_byte 
-	pop a 
-	call spi_send_byte 
-	ld a,#SPI_CS_RAM 
-	call spi_deselect_channel
-	ret 
-
-;----------------------------
-; read spi RAM mode register 
-; output:
-;   A       mode byte 
-;----------------------------
-spi_ram_read_mode::
-	ld a,#SPI_CS_RAM 
-	call spi_select_channel
-	ld a,#SPI_SDCARD_RDMOD 
-	call spi_send_byte 
-	call spi_rcv_byte
-	push a 
-	ld a,#SPI_CS_RAM 
-	call spi_deselect_channel
-	pop a 
-	ret 
-
 
 ;-----------------------------
 ; send 24 bits address to 
-; SPI device, RAM || FLASH 
+; opened device,  
 ; input:
 ;   farptr   address 
 ;------------------------------
 spi_send_addr::
-	ld a,#ADR_SIZE
-	cp a,#2
-	jreq 1$
 	_ldaz farptr 
 	call spi_send_byte 
-1$:	_ldaz ptr16 
+	_ldaz ptr16 
 	call spi_send_byte 
 	_ldaz ptr8 
 	call spi_send_byte 
 	ret 
 
-;--------------------------
-; write data to spi RAM 
-; input:
-;   farptr  address 
-;   x       count 0=65536
-;   y       buffer 
-;----------------------------
-spi_ram_write::
-	push a 
-	ld a,#SPI_CS_RAM 
-	call spi_select_channel
-	ld a,#SPI_SDCARD_WRITE
-	call spi_send_byte
-	call spi_send_addr 
-1$:	ld a,(y)
-	incw y 
-	call spi_send_byte
-	decw x 
-	jrne 1$ 
-	ld a,#SPI_CS_RAM 
-	call spi_deselect_channel
-	pop a 
-	ret 
-
-;-------------------------------
-; read bytes from SPI RAM 
-; input:
-;   farptr   address 
-;   X        count 
-;   Y        buffer 
-;-------------------------------
-spi_ram_read::
-	push a 
-	ld a,#SPI_CS_RAM 
-	call spi_select_channel
-	ld a,#SPI_SDCARD_READ
-	call spi_send_byte
-	call spi_send_addr 
-1$:	call spi_rcv_byte 
-	ld (y),a 
-	incw y 
-	decw x 
-	jrne 1$ 
-	ld a,#SPI_CS_RAM 
-	call spi_deselect_channel
-	pop a 
-	ret 
-
 ;---------------------
-; enable write to eeprom 
+; enable write to flash  
 ;----------------------
-eeprom_enable_write:
-	ld a,#SPI_CS_EEPROM 
-	call spi_select_channel 
-	ld a,#WR_EN 
+flash_enable_write:
+	call open_channel 
+	ld a,#W25Q_WREN 
 	call spi_send_byte 
-	ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel 
+	call close_channel 
 	ret 
 
 ;----------------------------
-;  read eeprom status register 
+;  read flash status register
 ;----------------------------
-eeprom_read_status:
-	ld a,#SPI_CS_EEPROM 	
-	call spi_select_channel 
-	ld a,#RD_STATUS 
+flash_read_status:
+	call open_channel 
+	ld a,#W25Q_READ_SR1 
 	call spi_send_byte
 	call spi_rcv_byte 
-	push a  
-	ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel
-	pop a		
+	call close_channel
 	ret
 
+;------------------------------
+;  poll busy bit in SR1 
+;  of selected channel 
+;  until operation end 
+;-------------------------------
+busy_polling:
+1$:	call flash_read_status 
+	bcp a,#(1<<SR1_BUSY)
+	jrne 1$
+	ret 
+
 ;----------------------------
-; write data to 25LC1024
-; page 
+; write data to W25Q80DV
+; selected device  
 ; input:
 ;   farptr  address 
-;   A       byte count, 0 == 256 
+;   A       byte count, 0 == 256
 ;   X       buffer address 
 ; output:
 ;   none 
@@ -346,13 +290,12 @@ eeprom_read_status:
 	BUF_ADR=1 
 	COUNT=BUF_ADR+2
 	VSIZE=COUNT 
-eeprom_write::
+flash_write::
 	push a 
-	pushw x 
-	call eeprom_enable_write
-	ld a,#SPI_CS_EEPROM 
-	call spi_select_channel 
-	ld a,#SPI_EEPROM_WRITE 
+	pushw x
+	call flash_enable_write
+	call open_channel 
+	ld a,#W25Q_WRITE 
 	call spi_send_byte 
 	call spi_send_addr 
 	ldw x,(BUF_ADR,sp)
@@ -362,28 +305,24 @@ eeprom_write::
 	incw x
 	dec (COUNT,sp) 
 	jrne 1$ 
-6$: ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel
-7$:	call eeprom_read_status 
-	bcp a,#(1<<SR_WIP_BIT)
-	jrne 7$
+6$: 
+	call close_channel
+	call busy_polling ; wait completion 
 	_drop VSIZE
 	ret 
-
 
 ;-------------------------- 
 ; read bytes from flash 
 ; memory in buffer 
 ; input:
-;   farptr addr in flash 
-;   x     count, 0=65536
-;   y     buffer addr 
+;   farptr flash memory address  
+;   x     count, {0..4095],0=W25_BUFFER_SIZE
+;   y     buffer addr
 ;---------------------------
-eeprom_read::
+flash_read::
 	pushw x 
-	ld a,#SPI_CS_EEPROM
-	call spi_select_channel
-	ld a,#SPI_EEPROM_READ
+	call open_channel
+	ld a,#W25Q_READ 
 	call spi_send_byte
 	call spi_send_addr  
 1$: call spi_rcv_byte 
@@ -393,8 +332,8 @@ eeprom_read::
 	decw x
 	ldw (1,sp),x 
 	jrne 1$ 
-9$:	ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel
+9$: 
+	call close_channel
 	_drop 2 
 	ret 
 
@@ -407,14 +346,11 @@ eeprom_read::
 ;    A   -1 true||0 false 
 ;    X   not changed 
 ;-------------------------
-eeprom_page_empty:
+flash_page_empty:
 	pushw x 
 	call page_addr 
-	_straz farptr 
-	_strxz ptr16 
-	ld a,#SPI_CS_EEPROM 
-	call spi_select_channel
-	ld a,#SPI_EEPROM_READ 
+	call open_channel
+	ld a,#W25Q_READ  
 	call spi_send_byte 
 	call spi_send_addr
 	push #0 
@@ -426,50 +362,134 @@ eeprom_page_empty:
 	cpl (1,sp) 
 	jra 9$
 8$: clr (1,sp) 
-9$: ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel
+9$: 
+	call close_channel
 	pop a 
 	popw x 
 	ret 
 
-;----------------------
-; erase 32KB sector 
+;--------------------------
+; compute 4KB block address 
 ; input:
-;   A    sector number {0..3} 
+;    X   block number {0..255}
+; output:
+;    farptr  address 
+;--------------------------
+b4k_address:
+	push a 
+	ld a,xl
+	push a
+	and a,#15
+	swap a  
+	ld xh,a 
+	clr a 
+	ld xl,a 
+	pop a 
+	and a,#0xf0 
+	swap a 
+; A:X=X*4096
+	jra stor_addr 
+
+;---------------------------
+; compute 32KB block address 
+; input:
+;    X    block number {0..31}
+; output:
+;    farptr   address 
+;----------------------------
+b32k_address:
+	push a 
+	clr a 
+	swapw x ; X*256 
+	srlw x  ; X/2  
+	rlwa x  ; A:X =X*32767
+	jra stor_addr  
+
+;---------------------------
+; compute 64KB block address 
+; input:
+;    X    block number {0..15}
+; output:
+;    farptr   address 
+;----------------------------
+b64k_address:
+	push a 
+	ld a,xl
+	clrw x  ; A:X=X*65536
+stor_addr:	 
+	_straz farptr 
+	_strxz ptr16 
+	pop a 
+	ret 
+
+
+;----------------------
+; erase 32KB|64KB block  
+; device already selected 
+; input:
+;   A    W25Q_B4K_ERASE||W25Q_B32K_ERASE||W25Q_B64K_ERASE 
+;   X    block number 
+;			4KB->{0.255}
+;			32KB->{0..31}
+;			64KB->{0..15}
 ; output:
 ;   none 
 ;----------------------
-eeprom_erase_sector:
-	call page_addr 
-	_straz farptr 
-	_strxz ptr16 
-	call eeprom_enable_write
-	ld a,#SPI_CS_EEPROM 
-	call spi_select_channel
-	ld a,#SECT_ERASE
+flash_block_erase:
+	cp a,#W25Q_B4K_ERASE 
+	jrne 1$ 
+	call b4k_address
+	jra flash_erase 
+1$:
+	cp a,#W25Q_B32K_ERASE
+	jrne 2$ 
+	call b32k_address
+	jra flash_erase 
+2$:
+	call b64k_address 
+flash_erase: 
+	call open_channel 
 	call spi_send_byte 
 	call spi_send_addr 
-	ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel
-1$:	call eeprom_read_status
-	bcp a,#(1<<SR_WIP_BIT)
-	jrne 1$
+	call close_channel
+	call busy_polling
 	ret 
 
 ;-----------------------------
-; erase whole eeprom 
+; erase whole flash memory 
 ;-----------------------------
-eeprom_erase_chip::
-	call eeprom_enable_write 
-	ld a,#SPI_CS_EEPROM 
-	call spi_select_channel
-	ld a,#CHIP_ERASE
-	call spi_send_byte 
-	ld a,#SPI_CS_EEPROM 
-	call spi_deselect_channel
-1$:	call eeprom_read_status
-	bcp a,#(1<<SR_WIP_BIT)
-	jrne 1$
+flash_chip_erase::
+	call open_channel 
+	ld a,#W25Q_CHIP_ERASE
+	call spi_send_byte  
+	call close_channel
+	call busy_polling
+	ret 
+
+;----------------------------
+; get JEDEC chip identifier 
+; output:
+;    A     memory size in MB 
+;    XH    manufacturer ID 
+;    XL    device ID 
+;---------------------------
+	MSIZE=3 
+	MFG_ID=2 
+	DEV_ID=1
+	VSIZE=3
+flash_chip_id:
+	_vars VSIZE 
+	call open_channel
+	ld a,#W25Q_JEDEC_ID 
+	call spi_send_byte
+	call spi_rcv_byte
+	ld (MFG_ID,sp),a 
+	call spi_rcv_byte
+	ld (DEV_ID,sp),a
+	call spi_rcv_byte  
+	call close_channel 
+	ldw x,(DEV_ID,sp)
+	_drop VSIZE 
 	ret 
 
 ;---------------------------
@@ -478,85 +498,96 @@ eeprom_erase_chip::
 ; input:
 ;   X     page {0..511}
 ; ouput:
-;   A:X    address 
+;   A:X    address
+;   farptr address  
 ;---------------------------
 page_addr:
 	clr a 
-	rlwa x 
+	rlwa x
+	_straz farptr 
+	_strxz ptr16   
 	ret 
 
 ;----------------------------
-; convert address to sector#
-; expect 256 bytes SECTOR_SIZE 
+; convert address to page#
+; expect 256 bytes page  
 ; input:
 ;   farptr   address 
 ; output:
-;   X       page  {0..511}
+;   X       page  {0..4095}
 ;----------------------------
 addr_to_page::
-	_ldaz farptr 
-	_ldxz ptr16 
-	rrwa x  
+	_ldxz farptr 
 	ret 
 
 ;---- test code -----
 
 ; ----- spi FLASH test ---------
-.if 0
-eeprom_test_msg: .byte 27,'c 
-.asciz "spi EEPROM test\n"
+.if 1
+flash_test_msg: .byte 27,'c 
+.asciz "spi flash test\n"
+jedec_id_msg: .asciz "JEDEC ID: "
 no_empty_msg: .asciz " no empty page "
-writing_msg: .asciz "\nwriting 128 bytes in page " 
+writing_msg: .asciz "\nwriting 256 bytes in page " 
 reading_msg: .asciz "\nreading back\n" 
 repeat_msg: .asciz "\nkey to repeat"
-eeprom_test:
-	call spi_enable
+flash_test:
 3$:
-	ldw x,#eeprom_test_msg 
-	call puts 
+	ldw x,#jedec_id_msg 
+	call uart_puts 
+	call flash_chip_id
+	call uart_print_hex_byte 
+	call uart_space
+	ld a,xh 
+	call uart_print_hex_byte 
+	call uart_space 
+	ld a,xl 
+	call uart_print_hex_byte  
+	call uart_new_line
+.endif 
+.if 0	 
+	ldw x,#flash_test_msg 
+	call uart_puts 
 	ldw x,#writing_msg   
-	call puts 
+	call uart_puts 
 ; search empty page 
 	clrw x
-7$:	call save_cursor_pos
+7$:
 	pushw x 
-	call print_int 
-	call restore_cursor_pos 
+	call uart_print_hex 
 	popw x 
-	call eeprom_page_empty
+	call flash_page_empty
 	tnz a 
 	jrmi 5$
 	incw x 
 	cpw x,#512
 	jrmi 7$
-	clr a 
-	call eeprom_erase_sector
+	ld a,#W25Q_B4K_ERASE
+	call flash_block_erase
 	ldw x,#no_empty_msg 
-	call puts 
+	call uart_puts 
 	call prng
 	rlwa x 
 	and a,#1 
 	rrwa x 
 5$: pushw x  
-	call print_int 
-	call new_line 
+	call uart_print_hex 
+	call uart_new_line 
 	popw x 
 	call page_addr 
-	_straz farptr 
-	_strxz ptr16 
-; fill tib with 128 random byte 
+; fill buffer with 256 random byte 
 0$:
-	push #64
-	ldw y,#tib 
+	push #256
+	ldw y,#flash_buffer  
 1$:
 	call prng 
 	ldw (y),x
 	ld a,xh 
-	call print_hex
-	call space  
+	call uart_print_hex_byte
+	call uart_space  
 	ld a,xl 
-	call print_hex 
-	call space 
+	call uart_print_hex_byte 
+	call uart_space 
 	addw y,#2 
 	pop a 
 	dec a 
@@ -564,30 +595,30 @@ eeprom_test:
 	push a 
 	and a,#7 
 	jrne 1$ 
-	call new_line 
+	call uart_new_line 
 	jra 1$ 
 4$:
-	ld a,#128 
-	ldw x,#tib 
-	call eeprom_write
+	ld a,#256 
+	ldw x,#flash_buffer 
+	call flash_write
 ; clear tib
-	ldw x,#tib 
-	ld a,#128 
+	ldw x,#flash_buffer
+	ld a,#256
 6$:	clr (x)
 	incw x 
 	dec a 
 	jrne 6$
 ;read back written data 
 	ldw x,#reading_msg 
-	call puts 
-	ldw y,#tib 
-	ldw x,#128 
-	call eeprom_read 
-	push #128 
-	ldw y,#tib 
+	call uart_puts 
+	ldw y,#flash_buffer 
+	ldw x,#256 
+	call flash_read 
+	push #256
+	ldw y,#flash_buffer 
 2$: ld a,(y)
-	call print_hex 
-	call space 
+	call uart_print_hex_byte 
+	call uart_space 
 	incw y
 	pop a 
 	dec a
@@ -595,89 +626,11 @@ eeprom_test:
 	push a  
 	and a,#15 
 	jrne 2$
-	call new_line
+	call uart_new_line
 	jra 2$  
 9$:	
 	ldw x,#repeat_msg
-	call puts 
+	call uart_puts 
 	call getc
 	jp 3$
-.endif 
-
-
-
-;----- spi RAM test 
-.if 0
-spi_ram_msg: .byte 27,'c  
- .asciz "SPI RAM test\n"
-spi_ram_write_msg: .asciz "Writing 128 bytes at "
-spi_ram_read_msg: .asciz "\nreading data back\n"
-spi_ram_test:
-	call spi_enable 
-	ldw x,#spi_ram_msg 
-	call puts
-	ldw x,#spi_ram_write_msg 
-	call puts  
-	call prng 
-	_clrz farptr 
-	_strxz ptr16 
-	call print_int
-	call new_line
-; fill tib with random bytes 
-	push #64
-	ldw y,#tib 
-1$:	call prng 
-	ldw (y),x 
-	addw y,#2
-	pushw x 
-	pop a 
-	call print_hex 
-	call space 
-	pop a 
-	call print_hex 
-	call space  
-	pop a 
-	dec a 
-	jreq 4$
-	push a 
-	and a,#7 
-	jrne 1$ 
-	call new_line 
-	jra 1$ 
-4$:
-	ldw x,#128 
-	ldw y,#tib 
-	call spi_ram_write 
-	ldw x,#spi_ram_read_msg 
-	call puts
-; clear tib 
-	ldw x,#128
-	ldw y,#tib 
-2$: clr (y)
-	incw y 
-	decw x 
-	jrne 2$
-	ldw y,#tib 
-	ldw x,#128 
-	call spi_ram_read 
-	push #128 
-	ldw y,#tib
-; print read values 
-3$:	ld a,(y)
-	incw y 
-	call print_hex 
-	call space 
-	pop a 
-	dec a 
-	jreq 5$
-	push a 
-	and a,#15
-	jrne 3$ 
-	call new_line
-	jra 3$ 
-5$:
-	ldw x,#repeat_msg
-	call puts 
-	call getc 
-	jp spi_ram_test
 .endif 

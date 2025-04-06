@@ -82,10 +82,11 @@ KERNEL_VAR_ORG=4
 ; keep the following 3 variables in this order 
 acc16:: .blkb 1 ; 16 bits accumulator, acc24 high-byte
 acc8::  .blkb 1 ;  8 bits accumulator, acc24 low-byte  
+farptr: .blkb 1; 24 bits pointer 
 ptr16::  .blkb 1 ; 16 bits pointer , farptr high-byte 
 ptr8:   .blkb 1 ; 8 bits pointer, farptr low-byte  
 flags:: .blkb 1 ; various boolean flags
-
+prng_seed: .blkb 2 ; 
 
 ; uart variable 
 RX_QUEUE_SIZE=64
@@ -129,57 +130,29 @@ clock_init:
 	pop CLK_CKDIVR   	
 	ret
 
-.if 0	
 ;--------------------------
-; set software interrupt 
-; priority 
-; input:
-;   A    priority 1,2,3 
-;   X    vector 
-;---------------------------
-	SPR_ADDR=1 
-	PRIORITY=3
-	SLOT=4
-	MASKED=5  
-	VSIZE=5
-set_int_priority::
-	_vars VSIZE
-	and a,#3  
-	ld (PRIORITY,sp),a 
-	ld a,#4 
-	div x,a 
-	sll a  ; slot*2 
-	ld (SLOT,sp),a
-	addw x,#ITC_SPR1 
-	ldw (SPR_ADDR,sp),x 
-; build mask
-	ldw x,#0xfffc 	
-	ld a,(SLOT,sp)
-	jreq 2$ 
-	scf 
-1$:	rlcw x 
-	dec a 
-	jrne 1$
-2$:	ld a,xl 
-; apply mask to slot 
-	ldw x,(SPR_ADDR,sp)
-	and a,(x)
-	ld (MASKED,sp),a 
-; shift priority to slot 
-	ld a,(PRIORITY,sp)
-	ld xl,a 
-	ld a,(SLOT,sp)
-	jreq 4$
-3$:	sllw x 
-	dec a 
-	jrne 3$
-4$:	ld a,xl 
-	or a,(MASKED,sp)
-	ldw x,(SPR_ADDR,sp)
-	ld (x),a 
-	_drop VSIZE 
+; pseudo random number 
+; Galois LFSR 
+; generator 
+; output:
+;    X     prng value 
+;--------------------------
+prng:
+; 5 times right shift 
+	push #5
+	_ldxz prng_seed
+1$:
+	srlw x 
+	jrnc 2$
+	ld a, xh 
+	xor a,#0XB4 
+	ld xh, a
+2$: 	
+	dec (1,sp)
+	jrne 1$  
+9$: _strxz prng_seed 
+	_drop 1 
 	ret 
-.endif 
 
 ;-------------------------------------
 ;  initialization entry point 
@@ -195,6 +168,7 @@ cold_start:
 ; clock HSI 16 Mhz 
 	clr CLK_CKDIVR 
 ; activate pull up on all inputs 
+.if 0
 	ld a,#255 
 	ld PA_CR1,a 
 	ld PB_CR1,a 
@@ -204,9 +178,14 @@ cold_start:
 	ld PF_CR1,a 
 	ld PG_CR1,a 
 	ld PI_CR1,a
+.endif 
+; init prng seed 
+	ldw x,#0xACE1
+	_strxz prng_seed
 ; disable schmitt triggers on Arduino CN4 analog inputs
 	mov ADC_TDRL,0x3f
 	call uart_init
+	call spi_init
 	rim ; enable interrupts 
 
 .if 1 ; TEST CODE 
@@ -215,11 +194,12 @@ call uart_putc
 ld a,#'c 
 call uart_putc
 ldw x,#test 
-call uart_puts 
+call uart_puts
+;call flash_test
 1$:
 call uart_getc 
 call uart_putc
 jra 1$   
-test: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\nThe quick bronw fox jump over the lazy dog.\n"
+test: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\nThe quick brown fox jump over the lazy dog.\n"
 .endif ; TEST CODE 
 
