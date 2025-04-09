@@ -21,30 +21,8 @@
 ;  low level driver 
 ;--------------------------------
 
-	.module SPI 
+	.module SPI
 
-
-    .module SPI    
-
-;-------------------------
-;  SPI interface 
-;-------------------------
-; SPI port 
-SPI_PORT= PC_BASE
-SPI_ODR=PC_ODR 
-SPI_IDR=PC_IDR 
-SPI_DDR=PC_DDR 
-SPI_CR1=PC_CR1 
-SPI_CR2=PC_CR2 
-; spi pins bits 
-SPI_MISO= 7;PC7 
-SPI_MOSI= 6;PC6
-SPI_CLK=  5;PC5 
-; SPI channel select pins 
-SPI_CS0=3   ; PC3 FLASH0  
-SPI_CS1=4   ; PC4 FLASH1  
-FLASH0=SPI_CS0 ; fixed internal
-FLASH1=SPI_CS1 ; removable external 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,16 +50,12 @@ W25Q_B4K_ERASE=0x20   ; erase 4KB block
 W25Q_B32K_ERASE=0x52 ; erase 32KB block 
 W25Q_B64K_ERASE=0XD8 ; erase 64KB block 
 W25Q_CHIP_ERASE=0xC7   ; whole memory  
-W25Q_READ_SR1=6 ; read status register 1
-W25Q_JEDEC_ID=0x9F ; 
-	.area DATA 
-flash_size: .blkb 1 ; in MB
-spi_device: .blkb 1 ; selected spi device 
+W25Q_READ_SR1=5 ; read status register 1
+W25Q_READ_SR2=0x35 ; read status register 2
+W25Q_MFG_ID=0x90 ; read manufacturer device id 
+W25Q_080_ID=0x13 ; device id for 1MB type 
+W25Q_128_ID=0x17 ; device id for 16MB type  
 
-	.area DATA 
-	.org 0x100  
-
-flash_buffer: .blkb W25Q_SECTOR_SIZE ; 4096 bytes 
 
 
     .area CODE 
@@ -97,30 +71,29 @@ flash_buffer: .blkb W25Q_SECTOR_SIZE ; 4096 bytes
 ;--------------------------------- 
 spi_init::
 	bset CLK_PCKENR1,#CLK_PCKENR1_SPI ; enable clock signal 
-; configure ~CS  
-;	bres SPI_CR1,#SPI_CS0 ; 10K external pull up  
-	bset SPI_DDR,#SPI_CS0 
-	bset SPI_ODR,#SPI_CS0   ; deselet channel 
-;	bres SPI_CR1,#SPI_CS1 ; 10K external pull up  
-	bset SPI_DDR,#SPI_CS1  
-	bset SPI_ODR,#SPI_CS1  ; deselect channel 
+; configure ~CS pins as output open drain  
+	bset SPI_PORT_DDR,#SPI_CS0   ; pin as output 
+	bset SPI_PORT_ODR,#SPI_CS0   ; deselect channel 
+	bset SPI_PORT_CR2,#SPI_CS0   ; fast output  
+	bset SPI_PORT_DDR,#SPI_CS1   ; pin as output 
+	bset SPI_PORT_ODR,#SPI_CS1   ; deselect channel 
+	bset SPI_PORT_CR2,#SPI_CS1   ; fast output 
 ; interrupts not used 
 	clr SPI_ICR ; no interrupt enabled 
-; master/slave mode controlled by sofware 	
-ret 
-	ld a,#(1<<SPI_CR2_SSM)+(1<<SPI_CR2_SSI) ; master mode 
+; software controlled MSTR/SLAVE mode 
+	ld a,#(1<<SPI_CR2_SSM)+(1<<SPI_CR2_SSI)
 	ld SPI_CR2,a 
-ld a,SPI_CR2
-call uart_print_hex_byte 	
 ; configure SPI as master mode 0 and enable.	
 	ld a,#(1<<SPI_CR1_MSTR)+(1<<SPI_CR1_SPE)
 	ld SPI_CR1,a 
-	btjf SPI_SR,#SPI_SR_RXNE,9$ 
-	ld a,SPI_DR 
+; clear status register 
+1$: btjt SPI_SR,#SPI_SR_BSY,.
+	btjf SPI_SR,#SPI_SR_RXNE,9$
+	ld a,#SPI_DR 
+	jra 1$ 
 ;select default device 
 9$:	ld a,#FLASH0  ; internal flash memory 
-	call create_bit_mask
-	_straz spi_device 
+	call spi_select_device
 	ret 
 
 ;----------------------------
@@ -133,18 +106,16 @@ spi_disable::
 	btjt SPI_SR,#SPI_SR_BSY,.
 	bres SPI_CR1,#SPI_CR1_SPE
 	bres CLK_PCKENR1,#CLK_PCKENR1_SPI 
-	bres SPI_DDR,#SPI_CS0 
-	bres SPI_DDR,#SPI_CS1  
+	bres SPI_PORT_DDR,#SPI_CS0 
+	bres SPI_PORT_DDR,#SPI_CS1  
 	ret 
 
 ;------------------------
 ; clear SPI error 
 ;-----------------------
 spi_clear_error::
-	ld a,#0x78 
-	bcp a,SPI_SR 
-	jreq 1$
-	clr SPI_SR 
+	ld a,SPI_SR 
+	ld a,SPI_DR 
 1$: ret 
 
 ;----------------------
@@ -155,9 +126,6 @@ spi_clear_error::
 ;   A     byte received 
 ;----------------------
 spi_send_byte::
-	push a 
-	call spi_clear_error
-	pop a 
 	btjf SPI_SR,#SPI_SR_TXE,.
 	ld SPI_DR,a
 	btjf SPI_SR,#SPI_SR_RXNE,.  
@@ -202,7 +170,19 @@ create_bit_mask::
 ;--------------------------------
 spi_select_device::
 	call create_bit_mask
-	_straz spi_device 
+	_straz spi_device
+	call device_id
+	cp a,#W25Q_080_ID
+	jrne 1$ 
+	mov device_size,#1 
+;	ld a,#1  ; MB
+;	_straz device_size  
+	jra 9$
+1$:	cp a,#W25Q_128_ID
+	jrne 9$ 
+	ld a,#16
+	_straz device_size ; 16MB  
+9$: 
 	ret 
 
 ;--------------------------
@@ -212,8 +192,8 @@ open_channel:
 	push a 
 	_ldaz spi_device 
 	cpl a  
-	and a,SPI_ODR 
-	ld SPI_ODR,a 
+	and a,SPI_PORT_ODR 
+	ld SPI_PORT_ODR,a 
 	pop a  
 	ret 
 
@@ -225,8 +205,8 @@ close_channel::
 	push a 
 	btjt SPI_SR,#SPI_SR_BSY,.
 	_ldaz spi_device 
-	or a,SPI_ODR 
-	ld SPI_ODR,a 
+	or a,SPI_PORT_ODR 
+	ld SPI_PORT_ODR,a 
 	pop a  
 	ret 
 
@@ -289,7 +269,7 @@ busy_polling:
 ;----------------------------
 	BUF_ADR=1 
 	COUNT=BUF_ADR+2
-	VSIZE=COUNT 
+	VSIZE=3 
 flash_write::
 	push a 
 	pushw x
@@ -316,10 +296,11 @@ flash_write::
 ; memory in buffer 
 ; input:
 ;   farptr flash memory address  
-;   x     count, {0..4095],0=W25_BUFFER_SIZE
+;   x     count, {0..4095},0=4096 bytes 
 ;   y     buffer addr
 ;---------------------------
 flash_read::
+	pushw y 
 	pushw x 
 	call open_channel
 	ld a,#W25Q_READ 
@@ -335,6 +316,7 @@ flash_read::
 9$: 
 	call close_channel
 	_drop 2 
+	popw y 
 	ret 
 
 ;--------------------
@@ -376,7 +358,6 @@ flash_page_empty:
 ;    farptr  address 
 ;--------------------------
 b4k_address:
-	push a 
 	ld a,xl
 	push a
 	and a,#15
@@ -398,7 +379,6 @@ b4k_address:
 ;    farptr   address 
 ;----------------------------
 b32k_address:
-	push a 
 	clr a 
 	swapw x ; X*256 
 	srlw x  ; X/2  
@@ -413,13 +393,11 @@ b32k_address:
 ;    farptr   address 
 ;----------------------------
 b64k_address:
-	push a 
 	ld a,xl
 	clrw x  ; A:X=X*65536
 stor_addr:	 
 	_straz farptr 
 	_strxz ptr16 
-	pop a 
 	ret 
 
 
@@ -436,6 +414,8 @@ stor_addr:
 ;   none 
 ;----------------------
 flash_block_erase:
+	push a 
+	call flash_enable_write
 	cp a,#W25Q_B4K_ERASE 
 	jrne 1$ 
 	call b4k_address
@@ -448,6 +428,7 @@ flash_block_erase:
 2$:
 	call b64k_address 
 flash_erase: 
+	pop a 
 	call open_channel 
 	call spi_send_byte 
 	call spi_send_addr 
@@ -455,10 +436,12 @@ flash_erase:
 	call busy_polling
 	ret 
 
+
 ;-----------------------------
 ; erase whole flash memory 
 ;-----------------------------
 flash_chip_erase::
+	call flash_enable_write 
 	call open_channel 
 	ld a,#W25Q_CHIP_ERASE
 	call spi_send_byte  
@@ -467,29 +450,20 @@ flash_chip_erase::
 	ret 
 
 ;----------------------------
-; get JEDEC chip identifier 
-; output:
-;    A     memory size in MB 
-;    XH    manufacturer ID 
-;    XL    device ID 
+; read device ID 
+; cmd: W25Q_MFG_ID 
 ;---------------------------
-	MSIZE=3 
-	MFG_ID=2 
-	DEV_ID=1
-	VSIZE=3
-flash_chip_id:
-	_vars VSIZE 
-	call open_channel
-	ld a,#W25Q_JEDEC_ID 
-	call spi_send_byte
-	call spi_rcv_byte
-	ld (MFG_ID,sp),a 
-	call spi_rcv_byte
-	ld (DEV_ID,sp),a
+device_id:
+	_clrz farptr 
+	_clrz ptr16 
+	_clrz ptr8 
+	call open_channel 
+	ld a,#W25Q_MFG_ID
+	call spi_send_byte 
+	call spi_send_addr
 	call spi_rcv_byte  
+	call spi_rcv_byte 
 	call close_channel 
-	ldw x,(DEV_ID,sp)
-	_drop VSIZE 
 	ret 
 
 ;---------------------------
@@ -523,39 +497,32 @@ addr_to_page::
 ;---- test code -----
 
 ; ----- spi FLASH test ---------
-.if 1
-flash_test_msg: .byte 27,'c 
-.asciz "spi flash test\n"
-jedec_id_msg: .asciz "JEDEC ID: "
+.if FLASH_TEST 
+dev_id: .asciz "device id: " 
+dev_size: .asciz ", device size MB: "
 no_empty_msg: .asciz " no empty page "
-writing_msg: .asciz "\nwriting 256 bytes in page " 
-reading_msg: .asciz "\nreading back\n" 
-repeat_msg: .asciz "\nkey to repeat"
+writing_msg: .asciz "writing 256 bytes in page " 
+reading_msg: .asciz "reading back\r" 
+erase_msg: .asciz "erasing block 0\r"
+done_msg: .asciz "test completed\r"
 flash_test:
-3$:
-	ldw x,#jedec_id_msg 
+	call uart_cls 
+	ldw x,#dev_id  
 	call uart_puts 
-	call flash_chip_id
+	call device_id
 	call uart_print_hex_byte 
-	call uart_space
-	ld a,xh 
-	call uart_print_hex_byte 
-	call uart_space 
-	ld a,xl 
-	call uart_print_hex_byte  
-	call uart_new_line
-.endif 
-.if 0	 
-	ldw x,#flash_test_msg 
+	ldw x,#dev_size 
 	call uart_puts 
+	clrw x 
+	_ldaz device_size 
+	ld xl,a 
+	call uart_print_int 
+	call next_test 
 	ldw x,#writing_msg   
 	call uart_puts 
 ; search empty page 
 	clrw x
 7$:
-	pushw x 
-	call uart_print_hex 
-	popw x 
 	call flash_page_empty
 	tnz a 
 	jrmi 5$
@@ -575,62 +542,89 @@ flash_test:
 	call uart_new_line 
 	popw x 
 	call page_addr 
-; fill buffer with 256 random byte 
+; fill buffer with 256 random bytes 
 0$:
-	push #256
+	push #0
 	ldw y,#flash_buffer  
-1$:
+1$: 
 	call prng 
-	ldw (y),x
-	ld a,xh 
-	call uart_print_hex_byte
-	call uart_space  
 	ld a,xl 
-	call uart_print_hex_byte 
-	call uart_space 
-	addw y,#2 
-	pop a 
-	dec a 
-	jreq 4$
-	push a 
-	and a,#7 
-	jrne 1$ 
-	call uart_new_line 
-	jra 1$ 
-4$:
-	ld a,#256 
+	ld (y),a 
+	incw y 
+	dec (1,sp)
+	jrne 1$
+	call print_buffer 
+	clr a 
 	ldw x,#flash_buffer 
 	call flash_write
-; clear tib
+; clear buffer 
+	ld a,#255 
 	ldw x,#flash_buffer
-	ld a,#256
 6$:	clr (x)
 	incw x 
 	dec a 
-	jrne 6$
+	cp a,#255 
+	jrne 6$ 
 ;read back written data 
 	ldw x,#reading_msg 
 	call uart_puts 
 	ldw y,#flash_buffer 
 	ldw x,#256 
 	call flash_read 
-	push #256
-	ldw y,#flash_buffer 
-2$: ld a,(y)
-	call uart_print_hex_byte 
-	call uart_space 
-	incw y
-	pop a 
-	dec a
-	jreq 9$  
-	push a  
-	and a,#15 
-	jrne 2$
-	call uart_new_line
-	jra 2$  
-9$:	
-	ldw x,#repeat_msg
+	call print_buffer 
+; erasing block 0
+	_clrz farptr 
+	clrw x 
+	_strxz ptr16
+	ldw x,#erase_msg 
 	call uart_puts 
-	call getc
-	jp 3$
+	ld a,#W25Q_B4K_ERASE
+	clrw x 
+	call flash_block_erase
+; reaading page 0
+	_clrz farptr 
+	clrw x  
+	_strxz ptr16
+	ldw x,#reading_msg
+	call uart_puts 
+	ldw x,#256
+	call flash_read 
+	call print_buffer 
+	ldw x,#done_msg 
+	call uart_puts 
+	jra . 
+
+
+prompt: .asciz "any key for next test."
+next_test:
+	call uart_new_line
+	ldw x,#prompt
+	call uart_puts 
+	call uart_getc 
+	call uart_new_line	
+	ret
+
+; print 256 byte in buffer 
+print_buffer:
+	call uart_new_line
+	push #0 
+	ldw x,#flash_buffer 
+1$: 
+	ld a,(x)
+	call uart_print_hex_byte
+	call uart_space 
+	incw x 
+	dec (1,sp)
+	ld a,(1,sp) 
+	cp a,#0
+	jreq 9$ 
+	and a,#0xF 
+	jrne 1$ 
+	call uart_new_line
+	jra 1$
+9$: 
+	call uart_new_line
+	pop a	
+	ret 
+
 .endif 

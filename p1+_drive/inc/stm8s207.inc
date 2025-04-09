@@ -546,7 +546,7 @@ B57600=5
 B115200=6
 B230400=7
 B460800=8
-B921600=9
+
 
 ; UART registers offset from
 ; base address 

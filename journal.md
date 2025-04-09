@@ -3,6 +3,12 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-04-09 
+
+* Travail sur p1+_drive:
+  * spi.asm complété. 
+  * À faire drive_cmd.asm 
+
 ### 2025-03-19
 
 * Modification du design 

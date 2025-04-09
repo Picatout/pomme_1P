@@ -645,3 +645,15 @@ incr_farptr:
 	_straz farptr 
 	ret 
 
+
+.if DRV_CMD_TEST
+;----------------------------
+; drive test using serial 
+; interface 
+;----------------------------
+drv_cmd_test:
+	jra . 
+	ret 
+
+.endif 	
+

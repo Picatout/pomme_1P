@@ -28,8 +28,6 @@
 ; cancel program execution
 ; and fall back to command line
 ; CTRL+X reboot system 
-; CTLR+Z erase EEPROM autorun 
-;        information and reboot
 ;--------------------------
 UartRxHandler: ; console receive char 
 	btjf UART_SR,#UART_SR_RXNE,5$ 
@@ -65,10 +63,8 @@ uart_init:
 ; enable UART clock
 	bset CLK_PCKENR1,#UART_PCKEN
 ; get BRR value from table 
-	ld a,#0xB
-	ld UART_BRR2,a 
-	ld a,#0x8
-	ld UART_BRR1,a 
+	mov UART_BRR2,#0xB 
+	mov UART_BRR1,#0x8 
     clr UART_DR
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
     clr rx1_head 
@@ -87,9 +83,22 @@ uart_putc::
 	ld UART_DR,a 
 	ret 
 
+;------------------------------
+; send line feed ASCII 
+; to terminal 
+;-------------------------------
 uart_new_line:
+	ld a,#LF
+	jra uart_putc 
+
+;--------------------------
+; send carriage return 
+; to terminal
+;--------------------------
+uart_cr:
 	ld a,#CR 
 	jra uart_putc 
+
 
 ;-------------------------
 ; delete character left 
@@ -252,3 +261,45 @@ hex_digit:
 	add a,#7 
 9$: ret 
 
+
+;------------------------------
+; print integer in decimal 
+; input:
+;    X   integer 
+;-----------------------------
+	DCNT=1 
+	NEG=2
+	DIGITS=3
+	VSIZE = 7 
+uart_print_int:
+	pushw y 
+	_vars VSIZE
+	clr (DCNT,sp) 
+	ldw y,sp 
+	addw y,#VSIZE 
+	tnzw x 
+	jrpl 1$ 
+	cpl (NEG,sp) 
+	negw x 
+1$:
+	ld a,#10 
+	div x,a 
+	ld (y),a 
+	decw y
+	inc (DCNT,sp) 
+	tnzw x 
+	jrne 1$ 
+	tnz (NEG,sp)
+	jreq 2$ 
+	ld a,#'- 
+	call uart_putc  
+2$: 
+	incw y 
+	ld a,(y)
+	add a,#'0 
+	call uart_putc 
+	dec (DCNT,sp)
+	jrne 2$ 	
+	_drop VSIZE 
+	popw y 
+	ret 

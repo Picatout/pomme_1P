@@ -8,7 +8,7 @@ SDAR=sdar
 OBJCPY=objcpy 
 CFLAGS=-mstm8 -lstm8
 INC=inc/
-INCLUDES=$(BOARD_INC) $(INC)ascii.inc $(INC)gen_macros.inc app_macros.inc 
+INCLUDES=$(MCU_INC) $(INC)ascii.inc $(INC)gen_macros.inc app_macros.inc 
 BUILD=build/
 SRC=hardware_init.asm std_func.asm uart.asm spi.asm  
 OBJECT=$(BUILD)$(NAME).rel
@@ -22,7 +22,7 @@ FLASH=stm8flash
 all: clean 
 	#
 	# "*************************************"
-	# "compiling $(NAME)  for $(BOARD)      "
+	# "compiling $(NAME)  for $(MCU)      "
 	# "*************************************"
 	$(SDAS) -g -l -o $(BUILD)$(NAME).rel $(SRC) 
 	$(SDCC) $(CFLAGS) -Wl-u -o $(BUILD)$(NAME).ihx $(OBJECT) 
@@ -44,24 +44,24 @@ clean:
 flash: $(LIB)
 	#
 	# "******************"
-	# "flashing $(BOARD) "
+	# "flashing $(MCU) "
 	# "******************"
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -s flash -w $(BUILD)$(NAME).ihx 
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s flash -w $(BUILD)$(NAME).ihx 
 
 # read flash memory 
 read: 
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -s flash -b 16384 -r flash.dat 
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s flash -b 16384 -r flash.dat 
 
 # erase flash memory from 0x8000-0xffff 
 erase:
 	dd if=/dev/zero bs=1 count=32768 of=zero.bin
-	$(FLASH) -c $(PROGRAMMER) -p$(BOARD) -s flash -b 32768 -w zero.bin 
+	$(FLASH) -c $(PROGRAMMER) -p$(MCU) -s flash -b 32768 -w zero.bin 
 	rm -f zero.bin 
 
 .PHONY: ee_clear 
 # erase eeprom 
 ee_clear: 
 	dd if=/dev/zero bs=1 count=16 of=zero.bin
-	$(FLASH) -c $(PROGRAMMER) -p$(BOARD) -s eeprom 16 -w zero.bin 
+	$(FLASH) -c $(PROGRAMMER) -p$(MCU) -s eeprom 16 -w zero.bin 
 	rm -f zero.bin 
  

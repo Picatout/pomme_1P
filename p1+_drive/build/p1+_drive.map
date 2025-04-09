@@ -8,22 +8,22 @@ Area                                    Addr        Size        Decimal Bytes (A
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
      00000000  .__.ABS.                           HW_INIT
+     00000000  l_DATA                          
      00000000  l_SSEG                          
      00000000  l__CODE                         
      00000000  s_DATA1                         
+     00000000  s_DATA2                         
      00000000  s_SSEG                          
      00000000  s_SSEG0                         
      00000000  s__CODE                         
      00000001  s_DATA                          
-     00000002  l_DATA                          
-     0000004A  l_DATA1                         
+     0000004C  l_DATA1                         
      00000080  l_HOME                          
      00000080  l_SSEG0                         
-     00000492  l_CODE                          
-     00001100  l_DATA2                         
+     0000056E  l_CODE                          
+     00001000  l_DATA2                         
      00008000  s_HOME                          
      00008080  s_CODE                          
-     00008512  s_DATA2                         
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 2.
 Hexadecimal  [32-Bits]
@@ -50,76 +50,76 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-DATA                                00000001    00000002 =           2. bytes (ABS,CON)
+DATA1                               00000000    0000004C =          76. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
+     00000000  acc16                              HW_INIT
+     00000001  acc8                               HW_INIT
+     00000002  farptr                             HW_INIT
+     00000003  ptr16                              HW_INIT
+     00000004  ptr8                               HW_INIT
+     00000005  flags                              HW_INIT
+     00000006  prng_seed                          HW_INIT
+     00000008  rx1_queue                          HW_INIT
+     00000048  rx1_head                           HW_INIT
+     00000049  rx1_tail                           HW_INIT
+     0000004A  device_size                        HW_INIT
+     0000004B  spi_device                         HW_INIT
 ASxxxx Linker V03.00 + NoICE + sdld,  page 5.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-DATA1                               00000000    0000004A =          74. bytes (ABS,CON)
+DATA2                               00000000    00001000 =        4096. bytes (ABS,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     00000004  acc16                              HW_INIT
-     00000005  acc8                               HW_INIT
-     00000007  ptr16                              HW_INIT
-     00000009  flags                              HW_INIT
+     00000100  flash_buffer                       HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 6.
 Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    00000492 =        1170. bytes (REL,CON)
+CODE                                00008080    0000056E =        1390. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     0000813C  strlen                             HW_INIT
-     00008147  strcmp                             HW_INIT
-     00008156  strcpy                             HW_INIT
-     00008166  move                               HW_INIT
-     000081B5  is_alpha                           HW_INIT
-     000081C6  is_digit                           HW_INIT
-     000081CF  is_hex_digit                       HW_INIT
-     000081DD  is_alnum                           HW_INIT
-     00008227  uart_putc                          HW_INIT
-     00008257  qgetc                              HW_INIT
-     00008257  uart_qgetc                         HW_INIT
-     0000825D  getc                               HW_INIT
-     0000825D  uart_getc                          HW_INIT
-     000082BD  spi_init                           HW_INIT
-     000082F6  spi_disable                        HW_INIT
-     00008316  spi_clear_error                    HW_INIT
-     00008322  spi_send_byte                      HW_INIT
-     00008338  spi_rcv_byte                       HW_INIT
-     00008342  create_bit_mask                    HW_INIT
-     00008351  spi_select_device                  HW_INIT
-     00008363  close_channel                      HW_INIT
-     00008373  spi_send_addr                      HW_INIT
-     000083A6  flash_write                        HW_INIT
-     000083CA  flash_read                         HW_INIT
-     00008456  flash_chip_erase                   HW_INIT
-     0000848B  addr_to_page                       HW_INIT
+     000080D0  strlen                             HW_INIT
+     000080DB  strcmp                             HW_INIT
+     000080EA  strcpy                             HW_INIT
+     000080FA  move                               HW_INIT
+     00008149  is_alpha                           HW_INIT
+     0000815A  is_digit                           HW_INIT
+     00008163  is_hex_digit                       HW_INIT
+     00008171  is_alnum                           HW_INIT
+     000081B9  uart_putc                          HW_INIT
+     000081ED  qgetc                              HW_INIT
+     000081ED  uart_qgetc                         HW_INIT
+     000081F3  getc                               HW_INIT
+     000081F3  uart_getc                          HW_INIT
+     0000828C  spi_init                           HW_INIT
+     000082CA  spi_disable                        HW_INIT
+     000082EA  spi_clear_error                    HW_INIT
+     000082F1  spi_send_byte                      HW_INIT
+     00008302  spi_rcv_byte                       HW_INIT
+     0000830C  create_bit_mask                    HW_INIT
+     0000831B  spi_select_device                  HW_INIT
+     00008342  close_channel                      HW_INIT
+     00008352  spi_send_addr                      HW_INIT
+     00008385  flash_write                        HW_INIT
+     000083A9  flash_read                         HW_INIT
+     0000843A  flash_chip_erase                   HW_INIT
+     0000846E  addr_to_page                       HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
-Hexadecimal  [32-Bits]
-
-Area                                    Addr        Size        Decimal Bytes (Attributes)
---------------------------------        ----        ----        ------- ----- ------------
-DATA2                               00008512    00001100 =        4352. bytes (REL,CON)
-
-      Value  Global                              Global Defined In Module
-      -----  --------------------------------   ------------------------
-ASxxxx Linker V03.00 + NoICE + sdld,  page 8.
 
 Files Linked                              [ module(s) ]
 
 build/p1+_drive.rel                       [ HW_INIT ]
 
-ASxxxx Linker V03.00 + NoICE + sdld,  page 9.
+ASxxxx Linker V03.00 + NoICE + sdld,  page 8.
 
 User Base Address Definitions
 
