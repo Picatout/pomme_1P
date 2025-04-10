@@ -45,7 +45,7 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int1 AWU   auto wake up from halt
 	int NonHandledInterrupt ;int2 CLK   clock controller
 	int NonHandledInterrupt ;int3 EXTI0 gpio A external interrupts
-	int NonHandledInterrupt    ;int4 EXTI1 gpio B external interrupts
+	int PBusIntHandler      ;int4 EXTI1 gpio B external interrupts
 	int NonHandledInterrupt ;int5 EXTI2 gpio C external interrupts
 	int NonHandledInterrupt ;int6 EXTI3 gpio D external interrupts
 	int NonHandledInterrupt ;int7 EXTI4 gpio E external interrupts
@@ -96,11 +96,12 @@ ptr8::   .blkb 1 ; 8 bits pointer, farptr low-byte
 flags:: .blkb 1 ; various boolean flags
 prng_seed:: .blkb 2 ; 
 
-; uart variable 
-RX_QUEUE_SIZE=64
-rx1_queue:: .ds RX_QUEUE_SIZE ; UART1 receive circular queue 
-rx1_head::  .blkb 1 ; rx1_queue head pointer
-rx1_tail::   .blkb 1 ; rx1_queue tail pointer  
+; communication queue 
+; used by UART and parallel bus interface 
+RX_QUEUE_SIZE=64 ; bytes 
+rx_queue:: .ds RX_QUEUE_SIZE ; receive circular queue 
+rx_head::  .blkb 1 ; rx_queue head pointer
+rx_tail::   .blkb 1 ; rx_queue tail pointer  
 
 ; SPI variables 
 device_size:: .blkb 1 ; in MB
@@ -160,14 +161,12 @@ cold_start:
 	jrne 0$
 ; clock HSI 16 Mhz 
 	clr CLK_CKDIVR 
-.if S207 
 ; disable all peripherals clock
+; to reduce power consumption
 	clr CLK_PCKENR1
-.endif 
-.if L151 
-	bres CLK_PCKENR2,#7 ; disable BOOT ROM clock  
-.endif 
+	clr CLK_PCKENR2 
 ; activate pull up on all inputs 
+; to reduce input noise.
 .if 1
 	ld a,#255 
 	ld PA_CR1,a 
@@ -177,16 +176,19 @@ cold_start:
 	ld PE_CR1,a 
 	ld PF_CR1,a 
 .endif 
-; init prng seed 
-	ldw x,#0xACE1
-	_strxz prng_seed
 ; disable schmitt triggers on Arduino CN4 analog inputs
 .if S207
 	ld a,#0x3f 
 	ld ADC_TDRL,a  
 .endif 
+; init prng seed 
+; only used in tests 
+	ldw x,#0xACE1
+	_strxz prng_seed
+; initialized peripherals 
 	call uart_init
 	call spi_init
+	call bus_init 
 	rim ; enable interrupts 
 
 UART_TEST=0
@@ -200,31 +202,12 @@ FLASH_TEST=0
 .endif 
 
 DRV_CMD_TEST=1
-
 .if DRV_CMD_TEST 
-	jra .
+	call drive_cmd_test
 .endif // DRV_CMD_TEST 
 
-.if UART_TEST  
-;-----------------------
-; UART test code 
-; print message 
-; then echo entered 
-; characters
-; qui when 'Q' entered 
-;------------------------
-uart_test:
-	call uart_cls 
-	ldw x,#test 
-	call uart_puts
-	call uart_new_line
-1$:
-	call uart_getc
-	cp a,#'Q
-	jreq 9$ 
-	call uart_putc
-	jra 1$   
-9$:	ret 
-test: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\rThe quick brown fox jump over the lazy dog.\recho test 'Q'uit"
-.endif ; UART_TEST  
+main:
+	jra . 
+
+
 

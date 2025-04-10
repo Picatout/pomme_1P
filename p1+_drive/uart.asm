@@ -36,18 +36,30 @@ UartRxHandler: ; console receive char
 	jrne 1$ 
 	_swreset
 1$:	
+	call store_byte_in_queue
+5$:	iret 
+
+;--------------------------------
+; store received byte in queue 
+; used by serial and parrallel 
+; interface 
+;  input:
+;     A    byte to store 
+;-------------------------------
+store_byte_in_queue:
 	push a
-	ld a,#rx1_queue 
-	add a,rx1_tail 
+	ld a,#rx_queue 
+	add a,rx_tail 
 	clrw x 
 	ld xl,a 
 	pop a  
 	ld (x),a 
-	_ldaz rx1_tail 
+	_ldaz rx_tail 
 	inc a 
 	and a,#RX_QUEUE_SIZE-1
-	_straz rx1_tail
-5$:	iret 
+	_straz rx_tail
+	ret 
+
 
 ;---------------------------------------------
 ; initialize UART, read external swtiches SW4,SW5 
@@ -67,8 +79,8 @@ uart_init:
 	mov UART_BRR1,#0x8 
     clr UART_DR
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
-    clr rx1_head 
-	clr rx1_tail
+    clr rx_head 
+	clr rx_tail
 	ret
 
 
@@ -137,7 +149,7 @@ uart_space:
 
 
 ;---------------------------------
-; Query for character in rx1_queue
+; Query for character in rx_queue
 ; input:
 ;   none 
 ; output:
@@ -146,8 +158,8 @@ uart_space:
 ;---------------------------------
 qgetc::
 uart_qgetc::
-	_ldaz rx1_head 
-	cp a,rx1_tail 
+	_ldaz rx_head 
+	cp a,rx_tail 
 	ret 
 
 ;---------------------------------
@@ -162,17 +174,17 @@ uart_getc::
 	call uart_qgetc
 	jreq uart_getc 
 	pushw x 
-;; rx1_queue must be in page 0 	
-	ld a,#rx1_queue
-	add a,rx1_head 
+;; rx_queue must be in page 0 	
+	ld a,#rx_queue
+	add a,rx_head 
 	clrw x  
 	ld xl,a 
 	ld a,(x)
 	push a
-	_ldaz rx1_head 
+	_ldaz rx_head 
 	inc a 
 	and a,#RX_QUEUE_SIZE-1
-	_straz rx1_head 
+	_straz rx_head 
 	pop a  
 	popw x
 	ret 

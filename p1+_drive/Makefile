@@ -10,7 +10,7 @@ CFLAGS=-mstm8 -lstm8
 INC=inc/
 INCLUDES=$(MCU_INC) $(INC)ascii.inc $(INC)gen_macros.inc app_macros.inc 
 BUILD=build/
-SRC=hardware_init.asm std_func.asm uart.asm spi.asm  
+SRC=hardware_init.asm std_func.asm uart.asm spi.asm  test.asm
 OBJECT=$(BUILD)$(NAME).rel
 OBJECTS=$(BUILD)$(SRC:.asm=.rel)
 LIST=$(BUILD)$(NAME).lst

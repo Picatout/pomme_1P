@@ -11,11 +11,34 @@
     
 FMSTR=16 ; MHZ
 
+
 S207=1
 .if S207
     L151=0 
     .include "inc/stm8s207.inc" 
 ;UART=UART3 
+
+; interface port 
+; communication with computer PIA W65C22 PORT A 
+; using 8 bits bus. 
+ITF_PORT=PORT_D ; data transfert bus 
+ITF_DDR=PD_DDR 
+ITF_ODR=PD_ODR 
+ITF_IDR=PD_IDR 
+ITF_CR1=PD_CR1 
+ITF_CR2=PD_CR2 
+; handshake 
+ITF_CTRL_PORT=PORT_B 
+ITF_CTRL_ODR=PB_ODR 
+ITF_CTRL_IDR=PB_IDR 
+ITF_CTRL_DDR=PB_DDR 
+ITF_CTRL_CR1=PB_CR1 
+ITF_CTRL_CR2=PB_CR2
+; handshake control lines 
+ITF_CA1=BIT1 ; drive ready signal on PB1 
+ITF_CA2=BIT0 ; computer ready signal on PB0 
+EXTI_CR=EXTI_CR1 ; external interrupt control register 
+ITF_CA2_PBIS=BIT2 ; EXTI_CR1 ext. int. control bits 2:3
 
 ; clock enable bit 
 UART_PCKEN=CLK_PCKENR1_UART3 

@@ -34,6 +34,48 @@
 
 	.area CODE 
 
+;--------------------------------
+; data received from computer 
+; store it in queue
+; and signal ready for next 
+; byte  
+;--------------------------------
+PBusIntHandler:
+	bset ITF_CTRL_ODR,#ITF_CTRL_CA1
+	clrw x 
+	_ldaz rx1_tail
+	ld a,ITF_IDR
+	call store_byte_in_queue
+	bres ITF_CTRL_ODR,#ITF_CTRL_CA1
+	iret 
+
+
+;-------------------------------
+; initialize parrallel interface 
+; with computer. 
+; 8 bits bus transfert 
+; with 2 control lines  
+; ITF_PORT stay as input as default mode 
+; ITF_CTRL_CA2 stay as input 
+;-------------------------------
+bus_init:
+; ITF_CA1 as output push-pull 
+	bset ITF_CTRL_CR1,#ITF_CTRL_CA1 ; push pull output 
+	bset ITF_CTRL_DDR,#ITF_CTRL_CA1; output mode
+	bres ITF_CTRL_ODR,#ITF_CTRL_CA1; ready to rexceive command
+; set external interrupt on ITF_CTRL_CA2 
+; to signal byte received on bus
+	bset EXIT_CR,#2 ; rising edge on CA2 trigger interrupt 
+; enable external interrupt on ITF_CTRL_CA2 
+	bset ITF_CR2,#ITF_CTRL_CA2 
+	ret 
+
+;----------------------------------
+; dr
+itf_loop:
+
+	ret 
+
 ;-------------------------------
 ;  file operation entry function 
 ; input:
@@ -645,15 +687,4 @@ incr_farptr:
 	_straz farptr 
 	ret 
 
-
-.if DRV_CMD_TEST
-;----------------------------
-; drive test using serial 
-; interface 
-;----------------------------
-drv_cmd_test:
-	jra . 
-	ret 
-
-.endif 	
 
