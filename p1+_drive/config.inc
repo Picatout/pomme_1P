@@ -11,6 +11,11 @@
     
 FMSTR=16 ; MHZ
 
+; flags 
+FTX=0 ; set to 1 when transmitting data to computer, otherwise reset  
+FCOMP_RDY=1 ; set this bit when computer is ready to receive, otherwise reset 
+
+
 
 S207=1
 .if S207
@@ -21,14 +26,14 @@ S207=1
 ; interface port 
 ; communication with computer PIA W65C22 PORT A 
 ; using 8 bits bus. 
-ITF_PORT=PORT_D ; data transfert bus 
+ITF_PORT=PD_BASE ; data transfert bus 
 ITF_DDR=PD_DDR 
 ITF_ODR=PD_ODR 
 ITF_IDR=PD_IDR 
 ITF_CR1=PD_CR1 
 ITF_CR2=PD_CR2 
 ; handshake 
-ITF_CTRL_PORT=PORT_B 
+ITF_CTRL_PORT=PB_BASE 
 ITF_CTRL_ODR=PB_ODR 
 ITF_CTRL_IDR=PB_IDR 
 ITF_CTRL_DDR=PB_DDR 

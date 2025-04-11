@@ -188,7 +188,7 @@ cold_start:
 ; initialized peripherals 
 	call uart_init
 	call spi_init
-	call bus_init 
+	call itf_init 
 	rim ; enable interrupts 
 
 UART_TEST=0

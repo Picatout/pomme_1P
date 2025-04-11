@@ -16,6 +16,23 @@
 ;     along with p1+_drive.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 
+;-------------------------------------------------------------
+; Parallel interface handshaking 
+; reveiving:
+; 	when the computer write un byte to PIA port A it signal it 
+; 	by a pulse on CA2. The falling edge trigger an interrupt. 
+; 	PBusIntHandler read the byte and store it in rx_queue.
+; 	It signal that it is ready for next byte 
+; 	by a pulse on CA1
+; Transmitting:
+;   To transmit to computer the drive wait that CA2 is low 
+;   it write to ITF_ODR and pulse ITF_CTRL_CA1 to signal 
+;   computer and store byte in PIA input register. 
+;   The computer pulse CA2 to signal ready for next transmit. 
+;
+; The drive works in slave mode it stay idle until it receive 
+; a command. 
+;--------------------------------------------------------------
 
 ;----------------------------------
 ;    file system 
@@ -41,12 +58,19 @@
 ; byte  
 ;--------------------------------
 PBusIntHandler:
-	bset ITF_CTRL_ODR,#ITF_CTRL_CA1
-	clrw x 
-	_ldaz rx1_tail
+	bset ITF_CTRL_ODR,#ITF_CA1
+	btjf flags,#FTX,1$ 
+; delay for pulse length
+; ~1µsec 
+	ld a,#5 
+0$: dec a 
+	jrne 0$ 
+	jra 2$ 
+1$:
 	ld a,ITF_IDR
 	call store_byte_in_queue
-	bres ITF_CTRL_ODR,#ITF_CTRL_CA1
+2$:	
+	bres ITF_CTRL_ODR,#ITF_CA1
 	iret 
 
 
@@ -58,24 +82,22 @@ PBusIntHandler:
 ; ITF_PORT stay as input as default mode 
 ; ITF_CTRL_CA2 stay as input 
 ;-------------------------------
-bus_init:
+itf_init:
 ; ITF_CA1 as output push-pull 
-	bset ITF_CTRL_CR1,#ITF_CTRL_CA1 ; push pull output 
-	bset ITF_CTRL_DDR,#ITF_CTRL_CA1; output mode
-	bres ITF_CTRL_ODR,#ITF_CTRL_CA1; ready to rexceive command
-; set external interrupt on ITF_CTRL_CA2 
+	bset ITF_CTRL_CR1,#ITF_CA1 ; push pull output 
+	bset ITF_CTRL_DDR,#ITF_CA1; output mode
+	bres ITF_CTRL_ODR,#ITF_CA1
+; set external interrupt on ITF_CA2 
 ; to signal byte received on bus
-	bset EXIT_CR,#2 ; rising edge on CA2 trigger interrupt 
-; enable external interrupt on ITF_CTRL_CA2 
-	bset ITF_CR2,#ITF_CTRL_CA2 
+	bset EXTI_CR,#ITF_CA2_PBIS ; rising edge on CA2 trigger interrupt 
+; enable external interrupt on ITF_CA2 
+	bset ITF_CR2,#ITF_CA2 
+; reset transmit flag 
+	bres flags,#FTX 
 	ret 
 
-;----------------------------------
-; dr
-itf_loop:
 
-	ret 
-
+.if 0
 ;-------------------------------
 ;  file operation entry function 
 ; input:
@@ -687,4 +709,5 @@ incr_farptr:
 	_straz farptr 
 	ret 
 
+.endif 
 

@@ -20,7 +20,7 @@ Area                                    Addr        Size        Decimal Bytes (A
      0000004C  l_DATA1                         
      00000080  l_HOME                          
      00000080  l_SSEG0                         
-     000003F8  l_CODE                          
+     00000434  l_CODE                          
      00001000  l_DATA2                         
      00008000  s_HOME                          
      00008080  s_CODE                          
@@ -61,9 +61,9 @@ DATA1                               00000000    0000004C =          76. bytes (A
      00000004  ptr8                               HW_INIT
      00000005  flags                              HW_INIT
      00000006  prng_seed                          HW_INIT
-     00000008  rx1_queue                          HW_INIT
-     00000048  rx1_head                           HW_INIT
-     00000049  rx1_tail                           HW_INIT
+     00000008  rx_queue                           HW_INIT
+     00000048  rx_head                            HW_INIT
+     00000049  rx_tail                            HW_INIT
      0000004A  device_size                        HW_INIT
      0000004B  spi_device                         HW_INIT
 ASxxxx Linker V03.00 + NoICE + sdld,  page 5.
@@ -82,36 +82,36 @@ Hexadecimal  [32-Bits]
 
 Area                                    Addr        Size        Decimal Bytes (Attributes)
 --------------------------------        ----        ----        ------- ----- ------------
-CODE                                00008080    000003F8 =        1016. bytes (REL,CON)
+CODE                                00008080    00000434 =        1076. bytes (REL,CON)
 
       Value  Global                              Global Defined In Module
       -----  --------------------------------   ------------------------
-     000080D6  strlen                             HW_INIT
-     000080E1  strcmp                             HW_INIT
-     000080F0  strcpy                             HW_INIT
-     00008100  move                               HW_INIT
-     0000814F  is_alpha                           HW_INIT
-     00008160  is_digit                           HW_INIT
-     00008169  is_hex_digit                       HW_INIT
-     00008177  is_alnum                           HW_INIT
-     000081BF  uart_putc                          HW_INIT
-     000081F3  qgetc                              HW_INIT
-     000081F3  uart_qgetc                         HW_INIT
-     000081F9  getc                               HW_INIT
-     000081F9  uart_getc                          HW_INIT
-     00008292  spi_init                           HW_INIT
-     000082D0  spi_disable                        HW_INIT
-     000082F0  spi_clear_error                    HW_INIT
-     000082F7  spi_send_byte                      HW_INIT
-     00008308  spi_rcv_byte                       HW_INIT
-     00008312  create_bit_mask                    HW_INIT
-     00008321  spi_select_device                  HW_INIT
-     00008348  close_channel                      HW_INIT
-     00008358  spi_send_addr                      HW_INIT
-     0000838B  flash_write                        HW_INIT
-     000083AF  flash_read                         HW_INIT
-     00008440  flash_chip_erase                   HW_INIT
-     00008474  addr_to_page                       HW_INIT
+     000080D9  strlen                             HW_INIT
+     000080E4  strcmp                             HW_INIT
+     000080F3  strcpy                             HW_INIT
+     00008103  move                               HW_INIT
+     00008152  is_alpha                           HW_INIT
+     00008163  is_digit                           HW_INIT
+     0000816C  is_hex_digit                       HW_INIT
+     0000817A  is_alnum                           HW_INIT
+     000081C6  uart_putc                          HW_INIT
+     000081FA  qgetc                              HW_INIT
+     000081FA  uart_qgetc                         HW_INIT
+     00008200  getc                               HW_INIT
+     00008200  uart_getc                          HW_INIT
+     00008299  spi_init                           HW_INIT
+     000082D7  spi_disable                        HW_INIT
+     000082F7  spi_clear_error                    HW_INIT
+     000082FE  spi_send_byte                      HW_INIT
+     0000830F  spi_rcv_byte                       HW_INIT
+     00008319  create_bit_mask                    HW_INIT
+     00008328  spi_select_device                  HW_INIT
+     0000834F  close_channel                      HW_INIT
+     0000835F  spi_send_addr                      HW_INIT
+     00008392  flash_write                        HW_INIT
+     000083B6  flash_read                         HW_INIT
+     00008447  flash_chip_erase                   HW_INIT
+     0000847B  addr_to_page                       HW_INIT
 
 ASxxxx Linker V03.00 + NoICE + sdld,  page 7.
 
