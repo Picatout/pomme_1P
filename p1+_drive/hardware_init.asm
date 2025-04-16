@@ -62,22 +62,14 @@ stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 	int NonHandledInterrupt ;int18 UART1 RX full 
 	int NonHandledInterrupt ;int19 I2C 
 	int NonHandledInterrupt ;int20 UART3 TX completed
-.if S207	
 	int UartRxHandler 		;int21 UART3 RX full
-.else
-	int NonHandledInterrupt ; int21 UART3 RX full 
-.endif 
 	int NonHandledInterrupt ;int22 ADC2 end of conversion
 	int NonHandledInterrupt	;int23 TIM4 update/overflow ; use to blink tv cursor 
 	int NonHandledInterrupt ;int24 flash writing EOP/WR_PG_DIS
 	int NonHandledInterrupt ;int25  not used
-	int NonHandledInterrupt ;int26  not used ; L151 SPI1 end of transfer
-	int NonHandledInterrupt ;int27  not used ; L151 UART TX completed 
-.if L151
-	int UartRxHandler      ; int28 UART RX full 
-.else
+	int NonHandledInterrupt ;int26  not used ;
+	int NonHandledInterrupt ;int27  not used ; 
 	int NonHandledInterrupt ;int28  not used
-.endif 	
 	int NonHandledInterrupt ;int29  not used
 
 
@@ -177,10 +169,8 @@ cold_start:
 	ld PF_CR1,a 
 .endif 
 ; disable schmitt triggers on Arduino CN4 analog inputs
-.if S207
 	ld a,#0x3f 
 	ld ADC_TDRL,a  
-.endif 
 ; init prng seed 
 ; only used in tests 
 	ldw x,#0xACE1
@@ -199,6 +189,11 @@ UART_TEST=0
 FLASH_TEST=0
 .if FLASH_TEST 
 	call flash_test 
+.endif 
+
+XRAM_TEST=1
+.if XRAM_TEST
+	call xram_test 
 .endif 
 
 DRV_CMD_TEST=1

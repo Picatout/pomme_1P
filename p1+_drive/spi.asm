@@ -56,7 +56,9 @@ W25Q_MFG_ID=0x90 ; read manufacturer device id
 W25Q_080_ID=0x13 ; device id for 1MB type 
 W25Q_128_ID=0x17 ; device id for 16MB type  
 
-
+; xram functions 
+XRAM_READ=3 
+XRAM_WRITE=2 
 
     .area CODE 
 
@@ -72,12 +74,10 @@ W25Q_128_ID=0x17 ; device id for 16MB type
 spi_init::
 	bset CLK_PCKENR1,#CLK_PCKENR1_SPI ; enable clock signal 
 ; configure ~CS pins as output open drain  
-	bset SPI_PORT_DDR,#SPI_CS0   ; pin as output 
-	bset SPI_PORT_ODR,#SPI_CS0   ; deselect channel 
-	bset SPI_PORT_CR2,#SPI_CS0   ; fast output  
-	bset SPI_PORT_DDR,#SPI_CS1   ; pin as output 
-	bset SPI_PORT_ODR,#SPI_CS1   ; deselect channel 
-	bset SPI_PORT_CR2,#SPI_CS1   ; fast output 
+	ld a,#(1<<SPI_CS0)+(1<<SPI_CS1)+(1<<SPI_CS2)+(1<<SPI_CS3)
+	ld SPI_PORT_DDR,a ; pins as output 
+	ld SPI_PORT_ODR,a ; high level 
+	ld SPI_PORT_CR2,a ; fast speed 
 ; interrupts not used 
 	clr SPI_ICR ; no interrupt enabled 
 ; software controlled MSTR/SLAVE mode 
@@ -166,7 +166,6 @@ create_bit_mask::
 ; SPI select device  
 ; input:
 ;   A    device FLASH0 || 
-;               FLASH1 
 ;--------------------------------
 spi_select_device::
 	call create_bit_mask
@@ -492,5 +491,69 @@ page_addr:
 ;----------------------------
 addr_to_page::
 	_ldxz farptr 
+	ret 
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;;  XRAM  23LC1024 
+;;  access 
+;;;;;;;;;;;;;;;;;;;;;;;
+
+;------------------------
+; read from XRAM 
+; input:
+;    A:X   address  {0..131071}
+;    Y     count   {0..4095}  
+; output:
+;    buffer  
+;-------------------------
+xram_read:
+    _straz farptr 
+	_strxz ptr16 
+	_ldaz spi_device 
+	push a 
+	ld a,#XRAM
+	call spi_select_device 
+	call open_channel 
+	ldw x,#flash_buffer
+	ld a,#XRAM_READ 
+	call spi_send_byte
+	call spi_send_addr 
+1$: call spi_rcv_byte 
+	ld (x),a 
+	incw x 
+	decw y 
+	jrne 1$ 
+	call close_channel 
+	pop a 
+	call spi_select_device
+	ret 
+
+;-------------------------------
+; write to XRAM 
+; input:
+;    A:X   address  {0..131071}
+;    Y     count   {0..4095}  
+;    buffer  data to write   
+;-------------------------------
+xram_write:
+	_straz farptr 
+	_strxz ptr16 
+	_ldaz spi_device 
+	push a 
+	ld a,#XRAM 
+	call spi_select_device
+	call open_channel 
+	ldw x,#flash_buffer 
+	ld a,#XRAM_WRITE 
+	call spi_send_byte
+	call spi_send_addr 
+1$: ld a,(x)
+	call spi_send_byte 
+	incw x 
+	decw y 
+	jrne 1$
+	call close_channel 
+	pop a 
+	call spi_select_device
 	ret 
 

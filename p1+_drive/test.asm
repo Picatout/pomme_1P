@@ -12,7 +12,7 @@
 ;------------------------
 uart_test:
 	call uart_cls 
-	ldw x,#test 
+	ldw x,#qbf 
 	call uart_puts
 	call uart_new_line
 1$:
@@ -22,8 +22,8 @@ uart_test:
 	call uart_putc
 	jra 1$   
 9$:	ret 
-test: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\rThe quick brown fox jump over the lazy dog.\recho test 'Q'uit"
 .endif ; UART_TEST  
+qbf: .asciz "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.\rThe quick brown fox jump over the lazy dog.\recho test 'Q'uit"
 
 ; ----- spi FLASH test ---------
 .if FLASH_TEST 
@@ -158,6 +158,39 @@ print_buffer:
 
 .endif 
 
+.if XRAM_TEST 
+xram_test:
+	call uart_cls
+	ldw x,#xram_test_msg 
+	call uart_puts
+	ldw x,#qbf 
+	ldw y,#flash_buffer 
+1$: ld a,(x)
+	ld (y),a 
+	incw x 
+	incw y 
+	tnz a 
+	jrne 1$ 
+	clr a 
+	clrw x 
+	ldw y,#88 
+	call xram_write 
+	ld a,#100
+	ldw x,#flash_buffer 
+2$: clr (x)
+	incw x 
+	dec a 
+	jrne 2$ 
+	clr a 
+	clrw x 
+	ldw y,#88
+	call xram_read 
+	ldw x,#flash_buffer 
+	call uart_puts 
+	ret 
+xram_test_msg: .asciz "XRAM test\r" 
+.endif 
+
 
 .if DRV_CMD_TEST 
 drive_cmd_test:
@@ -165,4 +198,5 @@ drive_cmd_test:
     ret 
 
 .endif 
+
 
