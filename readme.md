@@ -64,3 +64,14 @@ Au final cet ordinateur aura son propre terminal intégré et sera monté dans u
 [vidéo de présentation du pomme 1+](https://youtu.be/0cAoQgj5ZgQ)
 
 [début](#top)
+
+### 2025-04-24
+
+* Changement de direction, pour le moment j'ai abandonné le sous-projet **p1+_drive** pour fabriquer une carte contenant seulement la mémoire flash **W25Q080DV** de 1MO et qui et branchée directement sur un connecteur relié au PIA **W65C22**. Donc tous le firmware pour le stockage des programmes dans la mémoire flash cera programmé dans le BIOS du **pomme 1+.** 
+
+![carte mémoire flash](docs/carte-W25Q080DV.png). 
+
+
+[lien vidéo](https://youtube.com/shorts/QT92BZp_K6k?feature=share)
+
+[début](#top)
