@@ -24,12 +24,14 @@
 
     .include "config.inc"
 
-STACK_SIZE=128   
+STACK_SIZE=128
+TIB_SIZE=256    
 ;;-----------------------------------
     .area SSEG (ABS)
 ;; working buffers and stack at end of RAM. 	
 ;;-----------------------------------
     .org RAM_SIZE-STACK_SIZE
+tib:: .ds TIB_SIZE 
 stack_full:: .ds STACK_SIZE   ; control stack full 
 stack_unf: ; stack underflow ; RAM end +1 -> 0x1800
 
@@ -175,10 +177,21 @@ cold_start:
 ; only used in tests 
 	ldw x,#0xACE1
 	_strxz prng_seed
-; initialized peripherals 
-	call uart_init
-	call spi_init
+; interface selector 
+	bset ITF_CTRL_CR1,#ITF_SELECT ; set pull up on input 
+	bres flags,#FITF 
+	ld a,#(1<<ITF_SELECT)
+	and a,ITF_CTRL_IDR 
+	or a,flags 
+	_straz flags  
+; initialize peripherals 
+	btjf flags,#FITF, use_parallel 
+	call uart_init ; only if use serial interface
+	jra use_serial 
+use_parallel: ; interface 
 	call itf_init 
+use_serial: ; interface 
+	call spi_init
 	rim ; enable interrupts 
 
 UART_TEST=0
@@ -201,8 +214,66 @@ DRV_CMD_TEST=1
 	call drive_cmd_test
 .endif // DRV_CMD_TEST 
 
+;-------------------------------
+; read command line 
+; and execute action 
+;-------------------------------
 main:
-	jra . 
+	call uart_cls 
+1$:	ld a,#'# 
+	call uart_putc 
+	call get_command 
+	call exec_command
+	jra 1$
+
+
+get_command:
+	ldw x,#tib 
+	call uart_getc
+	cp a,#SOH 
+	jrne get_command
+	call uart_getc 
+	cp a,#EOT 
+	jreq 9$
+	ld (x),a 
+	incw x  
+9$:	 
+	ret 
+
+exec_command:
+	ldw x,#tib 
+	ld a,(x)
+	cp a,#'? 
+	jreq enquiry 
+	cp a,#'S 
+	jreq dev_sel 
+	cp a,#'R 
+	jreq read_sector 
+	cp a,#'W 
+	jreq write_sector 
+	cp a,#'X 
+	jreq erase_sector 
+	cp a,#'@ 
+	jreq xram_fetch 
+	cp a,#'! 
+	jreq xram_store 
+enquiry: parameters: none | output: dev_Id, total_sector_count, first free sector#
+
+dev_sel: parameters: drive letter | output dev_id, ACK 
+	
+read_sector: ; parameters: sector_number count | output: count bytes sent back to computer
+
+write_sector: ; parameters: sector_number, byte_count, data...
+
+erase_sector: ; parameters: sector_number | sector_number ACK 
+
+xram_fetch: ; parameters: address, byte_count | count bytes sent back to computer 
+
+xram_store: ; parameters: address byte_count data... | output  count, ACK 
+
+	ret 
+
+
 
 
 

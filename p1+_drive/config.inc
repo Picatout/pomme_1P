@@ -14,7 +14,7 @@ FMSTR=16 ; MHZ
 ; flags 
 FTX=0 ; set to 1 when transmitting data to computer, otherwise reset  
 FCOMP_RDY=1 ; set this bit when computer is ready to receive, otherwise reset 
-
+FITF=5 ; which interface to use, 0 parallel, 1 serial 
 
 
     .include "inc/stm8s207.inc" 
@@ -46,6 +46,22 @@ ITF_CA2=BIT0 ; computer ready signal on PB0
 EXTI_CR=EXTI_CR1 ; external interrupt control register 
 ITF_CA2_PBIS=BIT2 ; EXTI_CR1 ext. int. control bits 2:3 
 ITF_SELECT=BIT5 ; serial/parallel interface select
+
+;----------------------------------
+;  MACROS  
+;----------------------------------
+
+    ; write byte to interface 
+    .macro _itf_write
+    bset flags,#FTX  
+    btjf flags,#FCOMP_RDY,.
+    ld ITF_ODR,a 
+    bset ITF_CTRL_ODR,#ITF_CA1 
+    ld a,#5 
+1$: dec a 
+    jrne 1$ 
+    bres ITF_CTRL_ODR,#ITF_CA1 
+    .endm 
 
 ; clock enable bit 
 UART_PCKEN=CLK_PCKENR1_UART3 
@@ -81,6 +97,8 @@ SPI_CS1=4   ; PC4 XRAM
 SPI_CS2=2   ; PC2 external device 
 SPI_CS3=1   ; PC1 external device 
 FLASH0=SPI_CS0 ; fixed internal
+FLASH1=SPI_CS0 ; duplicate 
+FLASH2=SPI_CS1 ; external drive 
+FLASH3=SPI_CS2 ; external drive 
 XRAM=SPI_CS1 ; extended RAM  
-
 
