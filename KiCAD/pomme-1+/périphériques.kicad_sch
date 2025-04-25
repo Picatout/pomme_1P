@@ -4906,12 +4906,6 @@
 		(uuid "5d8e4ef7-5cb1-481a-bda9-5601086e7e0d")
 	)
 	(junction
-		(at 222.25 30.48)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "61de41f8-3127-467e-ba63-fbdaa948b0ac")
-	)
-	(junction
 		(at 214.63 127)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -6632,16 +6626,6 @@
 	)
 	(wire
 		(pts
-			(xy 222.25 27.94) (xy 222.25 30.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bad96a4b-8b95-4051-9f73-2b3ae4c5e0b2")
-	)
-	(wire
-		(pts
 			(xy 240.03 67.31) (xy 247.65 67.31)
 		)
 		(stroke
@@ -7102,6 +7086,16 @@
 		)
 		(uuid "175760d0-ac35-4548-8a45-38c002c33c58")
 	)
+	(text "0xD060..0xD06F\n"
+		(exclude_from_sim no)
+		(at 228.854 105.664 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "2918f7cf-636a-48c7-beb7-c7748ebd3e04")
+	)
 	(text "To terminal"
 		(exclude_from_sim no)
 		(at 271.018 143.764 0)
@@ -7111,17 +7105,6 @@
 			)
 		)
 		(uuid "55da184a-bfdf-41fb-a554-570c13a37bca")
-	)
-	(text "NOTE:\njumper on 3,4 for C51 ~{IRQ}\njumper on 1,2 FOR C22 ~{IRQ}\nboth can be jumped"
-		(exclude_from_sim no)
-		(at 154.686 46.482 0)
-		(effects
-			(font
-				(size 1.016 1.016)
-			)
-			(justify left)
-		)
-		(uuid "5cd653f4-412e-4815-862e-7925228f2660")
 	)
 	(text "74HC4002N"
 		(exclude_from_sim no)
@@ -7424,6 +7407,28 @@
 		(uuid "2c244704-00f3-417b-b9aa-6698003c3708")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 106.6144 68.58 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+				(hide yes)
+			)
+		)
+	)
+	(global_label "Vcc"
+		(shape input)
+		(at 222.25 27.94 180)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify right)
+		)
+		(uuid "2ca23848-3cf5-4ac3-ad74-2c1743fe3499")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 217.2494 27.94 0)
 			(effects
 				(font
 					(size 1.27 1.27)

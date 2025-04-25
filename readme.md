@@ -74,4 +74,5 @@ Au final cet ordinateur aura son propre terminal intégré et sera monté dans u
 
 [lien vidéo](https://youtube.com/shorts/QT92BZp_K6k?feature=share)
 
+
 [début](#top)

@@ -5,6 +5,8 @@ https://github.com/picatout/pomme-1P
 -->
 ### 2025-04-24
 
+* Corrigé erreur dans schématique du circuit de la mémoire FLASH W25Q080DV.
+
 * Changement de direction, pour le moment j'ai abandonné le sous-projet **p1+_drive** pour fabriquer une carte contenant seulement la mémoire flash **W25Q080DV** de 1MO et qui et branchée directement sur un connecteur relié au PIA **W65C22**. Donc tous le firmware pour le stockage des programmes dans la mémoire flash cera programmé dans le BIOS du **pomme 1+.** 
 
 ![carte mémoire flash](docs/carte-W25Q080DV.png). 

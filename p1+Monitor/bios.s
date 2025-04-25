@@ -7,11 +7,34 @@
 	.include "../inc/ascii.inc"
     .include "../inc/macros.inc" 
 
+;-------------------------------
+; W65C21 ACIA registers addresses
+;-------------------------------
 	ACIA_DATA = $D000
 	ACIA_STATUS = $D001 
 	ACIA_CMD = $D002
 	ACIA_CTRL = $D003
 	RX_FULL = 1<<4 ; receive buffer full is bit 4 
+
+;-------------------------------
+; W65C22 PIA registers addresses
+;-------------------------------
+    PIA_IORB = $D060 ; input/output data register port B 
+    PIA_IORA = $D061 ; input/output data register port A
+    PIA_DDRB = $D062 ; Data direction register port B 
+    PIA_DDRA = $D063 ; Data direction register port A
+    PIA_T1CL =  $D064 ; timer1 low order counter 
+    PIA_T1CH =  $D065 ; timer1 high order counter 
+    PIA_T1LL =  $D066 ; timer1 low order latch 
+    PIA_T1LH =  $D067 ; timer 1 high order latch 
+    PIA_T2CL =  $D068 ; timer 2 low order counter 
+    PIA_T2CH = $D069  ; timere 2 high order counter 
+    PIA_SR  =  $D06A  ; shift register 
+    PIA_ACR =  $D06B  ; auxiliary control register 
+    PIA_PCR =  $D06C  ; peripheral control register 
+    PIA_IFR =  $D06D  ; interrupt flags register 
+    PIA_IER =  $D06E  ; interrupt enable register 
+    PIA_IORA_NHS = $606F ; input/output data register A, no handshake 
 
 ; Processor status register bits 
     PSR_CARRY = 1
@@ -46,6 +69,23 @@ TIB:
     .res TIB_SIZE 
 
 	.segment "CODE"
+    .org $8000 
+; BIOS code here 
+
+;-----------------------------
+; initialize W65C22 PIA 
+; to interface W25Q080DV 
+; flash memory 
+; CB1 SPI clock 
+; CB2 SPI DATA I/O 
+; PB0 chip select 
+; IRQ triggerred when byte 
+; TX|RX completed
+;-----------------------------
+PIA_INIT:
+    
+    RTS 
+
 	.org $E000 
 
  
@@ -62,6 +102,9 @@ RESET:
     LDA   #PSR_IRQ_DIS
     PHA 
     PLP   
+; initialize PIA to interface to 
+; W25Q080DV flash memory 
+    JSR PIA_INIT 
 ; clear input buffer 	
 	LDA #0 
 	STA RX_HEAD 
