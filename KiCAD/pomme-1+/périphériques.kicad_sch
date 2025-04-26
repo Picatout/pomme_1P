@@ -4942,6 +4942,12 @@
 		(uuid "e0998b29-5687-4f24-b2bc-b5a8a1153235")
 	)
 	(junction
+		(at 106.68 104.14)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f93f119b-12f9-4a1d-92c8-f4d355cd121f")
+	)
+	(junction
 		(at 78.74 161.29)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -5616,6 +5622,16 @@
 	)
 	(wire
 		(pts
+			(xy 106.68 104.14) (xy 107.95 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "22fb75e2-381d-408f-83d3-94403a519802")
+	)
+	(wire
+		(pts
 			(xy 218.44 54.61) (xy 219.71 54.61)
 		)
 		(stroke
@@ -6206,6 +6222,16 @@
 	)
 	(wire
 		(pts
+			(xy 106.68 101.6) (xy 106.68 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "78d0bf1e-87c1-475d-bdda-9ac7da31c4c6")
+	)
+	(wire
+		(pts
 			(xy 240.03 95.25) (xy 242.57 95.25)
 		)
 		(stroke
@@ -6533,6 +6559,16 @@
 			(type default)
 		)
 		(uuid "aa978c1d-9740-45cc-9660-bb7660a2e3b0")
+	)
+	(wire
+		(pts
+			(xy 107.95 101.6) (xy 106.68 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ad31ffdb-08bf-4d5b-a717-9577c9e0487c")
 	)
 	(wire
 		(pts
@@ -6976,7 +7012,7 @@
 	)
 	(wire
 		(pts
-			(xy 105.41 104.14) (xy 107.95 104.14)
+			(xy 105.41 104.14) (xy 106.68 104.14)
 		)
 		(stroke
 			(width 0)
@@ -7658,7 +7694,7 @@
 			)
 		)
 	)
-	(global_label "CS0"
+	(global_label "C51_CS0"
 		(shape output)
 		(at 107.95 104.14 0)
 		(fields_autoplaced yes)
@@ -7670,7 +7706,7 @@
 		)
 		(uuid "47ee9a80-71bf-4540-82d3-99d23dde7542")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 113.2891 104.14 0)
+			(at 117.0144 104.14 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7790,7 +7826,7 @@
 			)
 		)
 	)
-	(global_label "~{CS1}"
+	(global_label "C51_~{CS1}"
 		(shape input)
 		(at 113.03 55.88 180)
 		(fields_autoplaced yes)
@@ -7802,7 +7838,7 @@
 		)
 		(uuid "590c0865-54ef-42f2-8a7a-f2d7404e086e")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 107.6909 55.88 0)
+			(at 103.9656 55.88 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7834,7 +7870,7 @@
 			)
 		)
 	)
-	(global_label "C22_~{CS1}"
+	(global_label "C22_~{CS2}"
 		(shape input)
 		(at 242.57 97.79 0)
 		(fields_autoplaced yes)
@@ -7878,7 +7914,7 @@
 			)
 		)
 	)
-	(global_label "CS0"
+	(global_label "C22_CS1"
 		(shape input)
 		(at 242.57 95.25 0)
 		(fields_autoplaced yes)
@@ -7890,7 +7926,7 @@
 		)
 		(uuid "6af4a9af-971b-4fc6-b1d6-eea20ec1ea08")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 247.9091 95.25 0)
+			(at 251.6344 95.25 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8318,6 +8354,28 @@
 			)
 		)
 	)
+	(global_label "C22_CS1"
+		(shape output)
+		(at 107.95 101.6 0)
+		(fields_autoplaced yes)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left)
+		)
+		(uuid "cbdd7214-1580-4c5d-a799-9b89503e0666")
+		(property "Intersheetrefs" "${INTERSHEET_REFS}"
+			(at 117.0144 101.6 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+	)
 	(global_label "CB1"
 		(shape input)
 		(at 243.84 27.94 0)
@@ -8362,7 +8420,7 @@
 			)
 		)
 	)
-	(global_label "CS0"
+	(global_label "C51_CS0"
 		(shape input)
 		(at 113.03 53.34 180)
 		(fields_autoplaced yes)
@@ -8374,7 +8432,7 @@
 		)
 		(uuid "e0ba60fc-52fb-4039-8501-4d6fa3eca565")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 107.6909 53.34 0)
+			(at 103.9656 53.34 0)
 			(effects
 				(font
 					(size 1.27 1.27)

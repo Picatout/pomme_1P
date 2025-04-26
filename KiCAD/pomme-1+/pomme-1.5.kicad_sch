@@ -6430,7 +6430,7 @@
 		)
 		(uuid "0309eaa7-ed55-4f6a-9c81-9e3796c6ff77")
 	)
-	(text "pomme 1+\nprocessor board\nV1.4"
+	(text "pomme 1+\nprocessor board\nV1.5"
 		(exclude_from_sim no)
 		(at 179.07 173.99 0)
 		(effects
@@ -6715,7 +6715,7 @@
 			)
 		)
 	)
-	(global_label "C22_~{CS1}"
+	(global_label "C22_~{CS2}"
 		(shape output)
 		(at 251.46 113.03 0)
 		(fields_autoplaced yes)
@@ -6737,7 +6737,7 @@
 			)
 		)
 	)
-	(global_label "~{CS1}"
+	(global_label "C51_~{CS1}"
 		(shape output)
 		(at 118.11 127 0)
 		(fields_autoplaced yes)
@@ -6749,7 +6749,7 @@
 		)
 		(uuid "4146792a-a564-4350-ac2e-129c0d3aa1bc")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 123.4491 127 0)
+			(at 127.1744 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
