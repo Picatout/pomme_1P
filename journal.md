@@ -3,6 +3,11 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-04-26
+
+* Travail sur [bios](BIOS/bios.s). Le W65C22 ne fonctionne pas tous les signaux CS1,CS2B,PHI2 et R/WB  sont correct mais l'écriture des registres ne semble pas s'effectuer.
+
+
 ### 2025-04-25
 
 * Travail sur [bios](BIOS/bios.s).
