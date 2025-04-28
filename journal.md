@@ -3,6 +3,12 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-04-27
+
+* Problème avec le W65C22S réglé, l'erreur était dans la conception matérielle. Les entrées **RWB** des W65C22S et W65C51S doivent-être alimentées directement par le signal **RWB** du MPU et on celui à la pin 8 de U3. 
+
+* Repris le travail sur le BIOS.
+
 ### 2025-04-26
 
 * Travail sur [bios](BIOS/bios.s). Le W65C22 ne fonctionne pas tous les signaux CS1,CS2B,PHI2 et R/WB  sont correct mais l'écriture des registres ne semble pas s'effectuer.
