@@ -8108,7 +8108,7 @@
 			)
 		)
 	)
-	(global_label "READ{slash}~{WRITE}"
+	(global_label "R{slash}~{W}"
 		(shape input)
 		(at 242.57 100.33 0)
 		(fields_autoplaced yes)
@@ -8120,7 +8120,7 @@
 		)
 		(uuid "68ad72e7-9852-4aab-8c43-bfb650ca773b")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 254.1986 100.33 0)
+			(at 248.1994 100.33 0)
 			(effects
 				(font
 					(size 1.27 1.27)
