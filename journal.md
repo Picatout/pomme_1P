@@ -3,6 +3,10 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-04-28 
+
+* Travail sur le BIOS.  Écriture des fonctions d'accès à la mémoire FLASH W25Q080.
+
 ### 2025-04-27
 
 * Problème avec le W65C22S réglé, l'erreur était dans la conception matérielle. Les entrées **RWB** des W65C22S et W65C51S doivent-être alimentées directement par le signal **RWB** du MPU et on celui à la pin 8 de U3. 

@@ -35,6 +35,8 @@
     VIA_IFR =  $D06D  ; interrupt flags register 
     VIA_IER =  $D06E  ; interrupt enable register 
     VIA_IORA_NHS = $D06F ; input/output data register A, no handshake 
+
+
 ;----------------------------------    
 ; VIA_ACR configuration 
 ; To use CB1,CB2 for SPI transfert 
@@ -43,8 +45,9 @@
 ; PB0 used as chip select output 
 ; configure IRQ to trigger when shift is completed  
 ;----------------------------------
-    SHIFT_IN = 2 ; VIA_SR shift in on PHI2  control  in VIA_ACR 
-    SHIFT_OUT = 6 ; VIA_SR shift out on PHI2 control in VIA_ACR 
+    SHIFT_IN = (2<<2) ; VIA_SR shift in on PHI2  control  in VIA_ACR 
+    SHIFT_OUT = (6<<2) ; VIA_SR shift out on PHI2 control in VIA_ACR 
+    SHIFT_DISABLE = (7<<2) ; VIA SR disabled
     SR_IER=(1<<2) ; to set interrupt on shift register in VIA_IER 
     SR_IFR=(1<<2) ; shift register interrupt flag in VIA_IFR 
     T1_IER=(1<<6) ; timer 1 interrupt enable bit in VIA_IER 
@@ -82,7 +85,7 @@ TIMER: .res 2 ; msec timer
 FLAGS: .res 1 ; boolean flags 
 BUF_ADR: .res 2 ; transaction buffer address
 BCOUNT: .res 2 ; transaction bytes count 
-FLAH_ADR: .res 3   ; 24 bits address to access external flash memory  
+FLASH_ADR: .res 3   ; 24 bits address to access external flash memory  
 RX_HEAD: .res 1  ; ACIA RX queue head pointer 
 RX_TAIL: .res 1  ; ACIA RX queue tail pointer 
 STR_PTR: .res 2  ; pointer to string printed by PUTS 
@@ -195,7 +198,7 @@ QBF: .ASCIIZ "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."
     STA VIA_T1LH
     STA VIA_T1CH
 ;enable T1 and SR interrupt 
-    LDA #(1<<7)+SR_IER+T1_IER 
+    LDA #(1<<7)+T1_IER 
     STA VIA_IER 
     RTS 
     .ENDPROC 
@@ -211,17 +214,33 @@ QBF: .ASCIIZ "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."
     .PROC INTR_SELECTOR
     PHA 
     LDA VIA_IFR 
-    BPL ACIA_INTR   
+    BPL ACIA_TEST  
 ; W65C22 VIA interrupt  
     JMP VIA_INTR 
 ; W65C51 ACIA interrupt
-ACIA_INTR: 
+ACIA_TEST:
+    LDA #RX_FULL 
+    AND ACIA_STATUS
+    BEQ EXIT  
     JMP ACIA_HANDLER
+EXIT:
+    PLA 
+    RTI 
     .ENDPROC 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FLASH memory basic functions 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+FLASH_READ_STATUS=5
+FLASH_WRITE_ENABLE=6 
+FLASH_WR=2 
+FLASH_RD=3 
+FLASH_ERASE_4K=$20
+FLASH_ERASE_32K=$52
+FLASH_ERASE_64K=$D8 
+FLASH_ERASE_ALL=$60
+FLASH_BUSY=1 
 
 ;------------------------------
 ; VIA shift register interrupt 
@@ -232,30 +251,29 @@ ACIA_INTR:
     .PROC VIA_INTR
 ; test T1_IFR  
     AND #T1_IFR  
-    BEQ SR_TEST 
+    BEQ EXIT  
 ; timer 2 interrupt handler 
-; increment millisecond counter 
+; increment millisecond counter
+; this is a 32 bits variable  
 TMR1_INTR: 
     INC MSEC 
     BNE TMR_DECR 
     INC MSEC+1
+    BNE TMR_DECR 
+    INC MSEC+2 
+    BNE TMR_DECR 
+    INC MSEC+3 
 TMR_DECR: ; decrement timer is enabled  
     LDA FLAGS 
     AND #F_TIMER 
-    BEQ SR_TEST
-    DEC TIMER
-    BNE SR_TEST 
-    DEC TIMER+1 
-    BNE SR_TEST 
-    LDA #<~F_TIMER 
-    BIT FLAGS 
-    STA FLAGS 
-SR_TEST:
-    LDA VIA_IFR 
-    AND #SR_IFR 
     BEQ EXIT 
-; shift register interrupt handler 
-
+    DEC TIMER
+    BNE EXIT  
+    DEC TIMER+1 
+    BNE EXIT 
+; timeout, reset timer flag
+    LDA #F_TIMER 
+    TRB FLAGS 
 EXIT: 
 ; clear all IF bits 
     LDA #127  
@@ -265,73 +283,201 @@ EXIT:
     .ENDPROC 
 
 ;---------------------------------
-;  send one byte to FLASH via  
+;  send one byte to FLASH via
 ;  VIA shift register 
+;  input:
+;     A    byte to send 
 ;---------------------------------
-    .PROC SEND_BYTE
-
-
+SEND_BYTE:
+    PHA 
+    LDA #SHIFT_OUT 
+    STA VIA_ACR 
+    _FLASH_SEL 
+    PLA 
+    STA VIA_SR  
+; wait for SR interrupt flag set 
+WAIT_SR_IF: 
+@LOOP:
+    LDA #SR_IFR 
+    AND VIA_SR 
+    BEQ @LOOP   ; loop until shift out completed 
+    TRB VIA_SR ; reset interrupt flag 
     RTS 
-    .ENDPROC 
 
 
 ;-----------------------------------
 ;  receive one byte from 
 ;  VIA shift register 
+; output:
+;     A   byte received 
 ;------------------------------------
-    .PROC RCV_BYTE
-
+RCV_BYTE:
+; set shift in mode 
+    LDA #SHIFT_IN 
+    TSB VIA_ACR 
+    LDA VIA_SR ; start shifting 
+    JSR WAIT_SR_IF ; wait shift completed 
+; disable shift register     
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR 
+    LDA VIA_SR ; get byte 
     RTS 
-    .ENDPROC 
+ 
+
+;---------------------------------
+; wait write/erase operation 
+; to complete 
+; busy bit in flash SR1 is 1 when busy 
+;---------------------------------
+WAIT_COMPLETED: 
+    _FLASH_SEL ; enable flash memory 
+    LDA #SHIFT_OUT
+    TSB VIA_ACR ; set shift out mode 
+    LDA #FLASH_READ_STATUS
+    STA VIA_SR
+    JSR WAIT_SR_IF  
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR ; disable shift register  
+    LDA #SHIFT_IN 
+    TSB VIA_ACR  ; enable shift in 
+    LDA VIA_SR ; start shifin  
+@LOOP: 
+    JSR WAIT_SR_IF ; wait shift in completed 
+    LDA VIA_SR 
+    AND #FLASH_BUSY 
+    BNE @LOOP 
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR ; disable shift register 
+    _FLASH_DESEL
+    RTS 
+
 
 ;------------------------------------
 ;  enable write bite in W25Q080 
 ;  status register 
 ;------------------------------------
-    .PROC ENABLE_WRITE
-
+ENABLE_WRITE:
+    LDA #SHIFT_OUT 
+    TSB VIA_ACR ; set shift out mode 
+    _FLASH_SEL
+    LDA #FLASH_WRITE_ENABLE
+    STA VIA_SR   
+    JSR WAIT_SR_IF
+    _FLASH_DESEL 
     RTS 
-    .ENDPROC 
 
 ;-------------------------------------
-;  erase 4KB sector in W25Q080 
+;  erase block in W25Q080 
+;  input:
+;     A   OPCODE: {FLASH_ERASE_4K,FLASH_ERASE_32K,
+;                  FLASH_ERASE_64K}
+;     farptr  block address 
 ;-------------------------------------
-    .PROC ERASE_4K
-
+ERASE_BLOCK:
+    PHA 
+    JSR ENABLE_WRITE 
+    _FLASH_SEL
+    PLA 
+SEND_OP_CODE:
+    STA VIA_SR 
+    JSR WAIT_SR_IF
+    JSR SEND_ADR 
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR 
+    _FLASH_DESEL
+    JSR WAIT_COMPLETED
     RTS 
-    .ENDPROC 
 
 ;--------------------------------------
-;  erase 32KB sector i W25Q080 
+;  send address in FLASH_ADR variable 
+;  to W25Q080 
+;  prerequites:
+;    flash select 
+;    SR mode in shift out 
 ;--------------------------------------
-    .PROC ERASE_32K
-
+SEND_ADR:      
+    LDA FLASH_ADR+2 
+    STA VIA_SR 
+    JSR WAIT_SR_IF 
+    LDA FLASH_ADR+1 
+    STA VIA_SR 
+    JSR WAIT_SR_IF 
+    LDA FLASH_ADR 
+    STA VIA_SR 
+    JSR WAIT_SR_IF
     RTS 
-    .ENDPROC 
 
 ;---------------------------------------
-;  erase W25Q080 whole chip 
+;  chip erae W25Q080
+;  OPCODE $60 
 ;---------------------------------------
-    .PROC ERASE_ALL
-
+ERASE_ALL:
+    JSR ENABLE_WRITE 
+    _FLASH_SEL 
+    LDA #FLASH_ERASE_ALL
+    STA VIA_SR 
+    JSR WAIT_SR_IF 
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR 
+    _FLASH_DESEL 
+    JSR WAIT_COMPLETED 
     RTS 
-    .ENDPROC 
+ 
 
 ;----------------------------------------
 ;  write up to 256 bytes in W25Q080 
+;  input:
+;      A    byte count 
 ;----------------------------------------
     .PROC FLASH_WRITE 
-
+    STA BCOUNT 
+    PHX 
+    JSR ENABLE_WRITE
+    _FLASH_SEL
+    LDA #FLASH_WR 
+    STA VIA_SR 
+    JSR WAIT_SR_IF
+    JSR SEND_ADR
+@LOOP:
+    LDA BUF_ADR,X 
+    STA VIA_SR 
+    JSR WAIT_SR_IF 
+    INX 
+    DEC BCOUNT 
+    BNE @LOOP
+    _FLASH_DESEL
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR 
+    JSR WAIT_COMPLETED 
+    PLX 
     RTS 
     .ENDPROC 
 
 ;------------------------------------------
 ; read a bloc of bytes from W25Q080 
 ;------------------------------------------
-    .PROC FLASH_READ 
-
+FLASH_READ: 
+    PHX 
+    LDA #FLASH_RD 
+    JSR SEND_BYTE 
+    JSR SEND_ADR 
+    LDA #SHIFT_IN 
+    STA VIA_ACR ; set shift in mode 
+    LDX #0
+    LDA VIA_SR ; start shift in  
+@LOOP:
+    JSR WAIT_SR_IF
+    LDA VIA_SR 
+    STA BUF_ADR,X 
+    INX 
+    DEC BCOUNT 
+    BNE @LOOP 
+    _FLASH_DESEL 
+    LDA #SHIFT_DISABLE
+    TRB VIA_ACR 
+    PLX 
     RTS 
-    .ENDPROC 
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -347,9 +493,9 @@ EXIT:
     .PROC SET_TIMER 
     STA TIMER+1 
     STX TIMER 
-    LDA FLAGS 
-    ORA #F_TIMER 
-    STA FLAGS 
+; set TIMER flag 
+    LDA #F_TIMER 
+    TSB FLAGS 
     RTS 
     .ENDPROC 
 
