@@ -70,6 +70,8 @@
 	IN   = $100-BUFF_SIZE 
     TIB_ORG = $200
     TIB_SIZE = 128 
+    PAD_SIZE = 128 
+    LOAD_ADR = $300 ; program load address 
 
 ;----------------------------
 ; BOOLEAN FLAGS 
@@ -82,7 +84,9 @@
     .ORG 0
 MSEC: .res 4  ; millisecond counter
 TIMER: .res 2 ; msec timer   
+SEED: .res 2 ; pseudo random number generator seed 
 FLAGS: .res 1 ; boolean flags 
+FREE_RAM: .res 2 ; address free RAM space after program load 
 BUF_ADR: .res 2 ; transaction buffer address
 BCOUNT: .res 2 ; transaction bytes count 
 FLASH_ADR: .res 3   ; 24 bits address to access external flash memory  
@@ -98,20 +102,28 @@ RX_BUFFER: .RES BUFF_SIZE
     .ORG TIB_ORG 
 TIB: 
     .RES TIB_SIZE 
+; working area 
+PAD: .RES PAD_SIZE 
 
-	.SEGMENT "CODE"
+	.CODE  
     .ORG $E000 
-; BIOS code here 
 
+; BIOS code here 
 
 ;-----------------------------
 ;  COLD START 
 ;  hardware initialization
 ;-----------------------------    
-    .PROC RESET	
+RESET:	
 ; initialize stack pointer     
     LDX   $FF 
-    TXS   
+    TXS 
+; set program address
+; all program space free 
+    LDA #>LOAD_ADR 
+    LDX #<LOAD_ADR 
+    STA FREE_RAM+1 
+    STX FREE_RAM          
 ; intialize Status register 
 ; disable iterrupts 
     SEI 
@@ -125,34 +137,51 @@ TIB:
 ; print BIOS information 
     JSR CLS ; clear terminal screen 
     _PUTS BIOS_INFO 
-    JSR NEW_LINE
     JSR MONITOR       
+
+DEBUG=1 
+;;;;;;;;;;;;;;;;;;;;;;;;;
 ; test code 
-TEST:
-INF_LOOP:
+;;;;;;;;;;;;;;;;;;;;;;;;;
+.IF DEBUG=1
+TEST_PAUSE=1
+.IF TEST_PAUSE=1
+    LDY #5
+@LOOP:
     _PUTS QBF
-    JSR NEW_LINE 
     _PAUSE 1000
-    BRA TEST  
+    DEY 
+    BNE @LOOP   
+.ENDIF 
 
-    .ENDPROC 
+TEST_RAND=1
+.IF TEST_RAND
+@R1:  
+    JSR RANDOMIZE 
+    JSR RAND
+    JSR PRT_HWORD 
+    JSR PRT_SPC 
+    _PAUSE 250 
+    BRA @R1    
+.ENDIF 
 
-    .PROC DELAY 
-    LDA #0 
-DLY0:    
-    LDX #0 
-DLY1:
-    DEX 
-    BNE DLY1
-    DEC A 
-    BNE DLY0  
-    RTS 
-    .ENDPROC 
+TEST_FLASH=1
+.IF TEST_FLASH=1
+; test flash memory functions     
+    _PUTS WR_STR 
 
 
-BIOS_INFO: .asciiz "pomme I+ BIOS version 1.0R0"	
+.ENDIF 
+    JMP RESET 
 
-QBF: .ASCIIZ "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG."
+WR_STR: .BYTE "testing write function",CR,0
+QBF: .BYTE "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.",CR,0 
+.ELSE 
+    JMP RESET  
+.ENDIF 
+
+BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0	
+
 
 
 ;-------------------------------
@@ -248,39 +277,43 @@ FLASH_BUSY=1
 ; transmit or receive next byte 
 ; depending of state F_SR_TX
 ;------------------------------
-    .PROC VIA_INTR
+VIA_INTR:
 ; test T1_IFR  
     AND #T1_IFR  
-    BEQ EXIT  
+    BEQ @EXIT  
 ; timer 2 interrupt handler 
 ; increment millisecond counter
 ; this is a 32 bits variable  
-TMR1_INTR: 
+@TMR1_INTR: 
     INC MSEC 
-    BNE TMR_DECR 
+    BNE @TMR_DECR 
     INC MSEC+1
-    BNE TMR_DECR 
+    BNE @TMR_DECR 
     INC MSEC+2 
-    BNE TMR_DECR 
+    BNE @TMR_DECR 
     INC MSEC+3 
-TMR_DECR: ; decrement timer is enabled  
+@TMR_DECR: ; decrement timer is enabled  
     LDA FLAGS 
     AND #F_TIMER 
-    BEQ EXIT 
-    DEC TIMER
-    BNE EXIT  
-    DEC TIMER+1 
-    BNE EXIT 
+    BEQ @EXIT
+    LDA TIMER 
+    SEC 
+    SBC #1 
+    STA TIMER 
+    LDA TIMER+1 
+    SBC #0 
+    STA TIMER+1
+    BPL @EXIT  
 ; timeout, reset timer flag
     LDA #F_TIMER 
     TRB FLAGS 
-EXIT: 
+@EXIT: 
 ; clear all IF bits 
     LDA #127  
     STA VIA_IFR 
     PLA 
     RTI 
-    .ENDPROC 
+
 
 ;---------------------------------
 ;  send one byte to FLASH via
@@ -505,15 +538,61 @@ FLASH_READ:
 ;   A    timer high byte 
 ;   X    timer low byte 
 ;-----------------------------------
-    .PROC PAUSE 
+PAUSE: 
 ; set delay     
     JSR SET_TIMER 
-WAIT: ; wait timeout 
+@WAIT: ; wait timeout 
     LDA #F_TIMER 
     AND FLAGS 
-    BNE WAIT 
+    BNE @WAIT 
     RTS     
-    .ENDPROC 
+
+
+;---------------------------------------
+; 16 bits linear feedback shift register 
+;---------------------------------------
+EOR_MASK=$B4
+LFSR: 
+    ROR SEED+1 
+    ROR SEED 
+    BCC @EXIT 
+    LDA #EOR_MASK 
+    EOR SEED+1 
+    STA SEED+1
+@EXIT:
+    RTS 
+
+;----------------------------------------
+; pseudo randmon number generator 
+; output:
+;   A:X   prng 
+;------------------------------------------
+RAND:
+    PHY 
+    LDY #5
+@LOOP:
+    JSR LFSR 
+    DEY 
+    BNE @LOOP
+    LDA SEED+1 
+    LDX SEED  
+    PLY 
+    RTS 
+
+;---------------------------------------
+; randomize PRNG seed using MSEC counter 
+;---------------------------------------
+RANDOMIZE:
+    LDA MSEC+1 
+    STA SEED+1 
+;SEED can be any value except zero 
+    LDA MSEC 
+    BNE @OK
+    INC A   ; for case where MSEC+1==0   
+@OK: 
+    STA SEED
+    RTS
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   terminal functions 
@@ -554,34 +633,33 @@ RX_DISCARD:
 ; input:
 ;    A   character to send
 ;---------------------------
-    .PROC PUTC
+PUTC:
 	STA ACIA_DATA  ; store character in ACIA register 
 ; need delay to avoid character overwrite in ACIA data register 
 ; 10 bits at 115200 BAUD = 86.8µsec 
 ; if Fclk=3.6864Mhz transmission delay --> 320 cycles/5cy = 64 loops  
 	LDA #65         
-DELAY:
+@DELAY:
 	DEC	A	       ; 2cy
-	BNE DELAY      ; 3cy = 5cy per loop 
+	BNE @DELAY      ; 3cy = 5cy per loop 
 	RTS            ; done 
-    .ENDPROC 
+ 
 
 ;------------------------
 ; send new line character 
 ;------------------------
-    .PROC NEW_LINE
+NEW_LINE:
     LDA #CR 
     BRA PUTC 
-    .ENDPROC 
+ 
 
 ;----------------------
 ; PRT_SPC 
 ; print space 
 ;----------------------
-    .PROC PRT_SPC 
+PRT_SPC: 
     LDA #SPACE 
     BRA PUTC 
-    .ENDPROC
 
 ;---------------------------------
 ; print string to console 
@@ -589,31 +667,30 @@ DELAY:
 ;   A   string address high byte 
 ;   X   sring address low byte 
 ;--------------------------------- 
-    .PROC PUTS
+PUTS:
     STA STR_PTR+1 
     STX STR_PTR 
     PHY  
     LDY #0     
-PUTS_NEXT:     
+@LOOP:     
 	LDA (STR_PTR),Y
-	BEQ PUTS_EXIT 
+	BEQ @EXIT 
 	JSR PUTC 
 	INY 
-	BRA PUTS_NEXT 
-PUTS_EXIT:
+	BRA @LOOP 
+@EXIT:
     PLY  
     RTS  
-    .ENDPROC 
 
 ;-----------------------------
 ; get character from IN buffer
 ; output:
 ;     A    0||character 
 ;----------------------------- 
-    .PROC GETC
+ GETC:
 	LDA      RX_TAIL 
 	CMP      RX_HEAD 
-	BEQ      NO_CHAR 
+	BEQ      @NO_CHAR 
 	TAX
 	LDA      IN,X 
 	PHA 
@@ -623,57 +700,55 @@ PUTS_EXIT:
 	STA     RX_TAIL
 	PLA    
 	RTS 
-NO_CHAR:
+@NO_CHAR:
 	LDA #0 
 	RTS 
-    .ENDPROC 
 
 ;-------------------------	
 ; read line from terminal
 ; line terminated byte CR
 ;   BS delete last character 
 ; output:
-;    TIB   text line 
+;    TIB   input buffer 
 ;    A     line length
 ;-------------------------
-    .PROC READLN
+READLN:
     LDY #0
-READLN_LOOP:
+@LOOP:
     JSR GETC 
-    BEQ READLN_LOOP 
+    BEQ @LOOP 
     CMP #BS
-    BNE TEST_CR 
+    BNE @TEST_CR 
     TYA 
-    BEQ READLN_LOOP 
+    BEQ @LOOP 
     JSR BACK_SPACE
     DEY 
-    BRA READLN_LOOP   
-TEST_CR: 
+    BRA @LOOP   
+@TEST_CR: 
     CMP #CR 
-    BNE NEXT_TEST 
+    BNE @NEXT_TEST 
     STA TIB,Y 
     INY
     JSR PUTC  
-    BRA READLN_EXIT
-NEXT_TEST:
+    BRA @EXIT
+@NEXT_TEST:
     CMP #SPACE 
-    BMI READLN_LOOP ; ignore it 
+    BMI @LOOP ; ignore it 
     CMP #127 
-    BPL READLN_LOOP ; >126 ignore it     
-KEEP_IT:
+    BPL @LOOP ; >126 ignore it     
+@KEEP_IT:
     STA TIB,Y 
     INY
-    JSR PUTC  
-    BRA READLN_LOOP 
-READLN_EXIT:
+    JSR PUTC ; echo character   
+    BRA @LOOP 
+@EXIT:
     TYA 
     RTS 
-    .ENDPROC 
-
+ 
 ;----------------------
 ; delete last character
 ;----------------------
-    .PROC BACK_SPACE
+BACK_SPACE:
     PHA 
     LDA #BS 
     JSR PUTC 
@@ -683,12 +758,11 @@ READLN_EXIT:
     JSR PUTC
     PLA  
     RTS 
-    .ENDPROC 
 
 ;----------------------
 ; clear terminal screen
 ;----------------------
-    .PROC CLS
+CLS:
     PHA 
     LDA #ESC 
     JSR PUTC 
@@ -696,7 +770,22 @@ READLN_EXIT:
     JSR PUTC 
     PLA 
     RTS 
-    .ENDPROC 
+
+;-----------------------------
+;  lower case letter 
+; input:
+;    A    character 
+; output:
+;    A   upper if letter 
+;------------------------------
+LOWER:
+    CMP #'A' 
+    BMI @EXIT
+    CMP #'Z'+1
+    BPL @EXIT 
+    ORA #$20 
+@EXIT:
+    RTS 
 
 ;-----------------------------
 ;  upper case letter 
@@ -705,41 +794,15 @@ READLN_EXIT:
 ; output:
 ;    A   upper if letter 
 ;------------------------------
-    .PROC UPPER
+UPPER:
     CMP #'a' 
-    BMI UPPER_EXIT
+    BMI @EXIT
     CMP #'{'
-    BPL UPPER_EXIT 
+    BPL @EXIT 
     AND #$DF
-UPPER_EXIT:
+@EXIT:
     RTS 
-    .ENDPROC 
 
-;-----------------------------
-; PRT_HEX 
-; print byte in hexadecimal 
-; input:
-;    A   byte to print 
-;-----------------------------
-    .PROC PRT_HEX 
-    PHA 
-    LSR A 
-    LSR A 
-    LSR A 
-    LSR A
-    JSR TO_HEX
-    PLA 
-    AND #$F   
-TO_HEX: 
-    CLC 
-    ADC #'0'
-    CMP #'9'+1
-    BMI PRT 
-    ADC #7 
-PRT:
-    JSR PUTC 
-    RTS 
-    .ENDPROC 
 
 ;-----------------------------
 ; PRT_HWORD 
@@ -748,29 +811,75 @@ PRT:
 ;    A   word high byte 
 ;    X   word low byte 
 ;------------------------------
-    .PROC PRT_HWORD 
+PRT_HWORD: 
     JSR PRT_HEX 
     TXA 
-    BRA PRT_HEX 
-    .ENDPROC 
 
+;-----------------------------
+; PRT_HEX 
+; print byte in hexadecimal 
+; input:
+;    A   byte to print 
+;-----------------------------
+PRT_HEX: 
+    PHA 
+    LSR A 
+    LSR A 
+    LSR A 
+    LSR A
+    JSR @TO_HEX
+    PLA 
+    AND #$F   
+@TO_HEX: 
+    CLC 
+    ADC #'0'
+    CMP #'9'+1
+    BMI @PRT 
+    CLC 
+    ADC #7 
+@PRT:
+    JSR PUTC 
+    RTS 
+
+;--------------------------------
+;  BIOS function call dispatcher 
+;  parameter in Y transfered in 
+;  A before jumping to function 
+;  input:
+;     A    function #
+;     X,Y  function parameters 
+;--------------------------------
+    .SEGMENT "SYSCALL" 
+    .ORG $FE00 
+BIOS_CALL:
+    ASL A
+    PHY 
+    TAY 
+    PLA 
+    JMP (FNTABLE,X)  
+
+
+;-----------------------------------
+; BIOS function table 
+FNTABLE: 
+    .WORD 0 
 
 ;----------------------------
 ; monitor wozmon style
 ;----------------------------
     .SEGMENT "MONITOR" 
     .ORG $FF00 
-    .PROC MONITOR 
+MONITOR: 
     JSR GETC
     CMP #'Q' 
-    BEQ EXIT  
-ECHO:      
+    BEQ @EXIT  
+@ECHO:      
     JSR PUTC 
     BRA MONITOR    
-EXIT:
+@EXIT:
     JSR NEW_LINE
     RTS 
-    .ENDPROC 
+
 
 	.SEGMENT "VECTORS" 
 	.ORG $FFFA    
