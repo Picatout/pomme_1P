@@ -189,7 +189,7 @@ VIA_INIT:
 ;   ACIA  W65C51 
 ;-------------------------------
 INTR_SELECTOR:
-    PHA 
+    PHA  
     LDA #VIA_T1_IF
     AND VIA_IFR 
     BNE VIA_INTR 
@@ -461,9 +461,8 @@ FLASH_RD_DEVID:
     _SET_SR_IN 
     LDA VIA_SR  ; start shifting 
     JSR WAIT_SR_IF
-    LDA VIA_SR  ; read value, start next shifting 
-    TAX 
-    JSR WAIT_SR_IF ; 
+    LDX VIA_SR  ; read value, start next shifting  
+    JSR WAIT_SR_IF 
     _SWITCH_SR_OFF ; turn off shift register 
     LDA VIA_SR 
     _FLASH_DESEL
@@ -637,6 +636,16 @@ PUTS:
     PLY  
     RTS  
 
+;--------------------------------
+; query for character in rx_queue
+; output:
+;    Z   flag set if char in queue
+;--------------------------------- 
+QCHAR:
+	LDA      RX_TAIL 
+	CMP      RX_HEAD 
+    RTS 
+
 ;-----------------------------
 ; get character from RX_BUFF buffer
 ; output:
@@ -645,7 +654,7 @@ PUTS:
  GETC:
 	LDA      RX_TAIL 
 	CMP      RX_HEAD 
-	BEQ      @NO_CHAR 
+	BEQ      GETC 
 	TAX
 	LDA      RX_BUFF,X 
 	PHA 
