@@ -1,5 +1,5 @@
 ;----------------------------
-; Wozmon adapté au pomme-1.5
+; pomme 1+ BIOS 
 ;----------------------------
 	
 	.PC02
@@ -7,96 +7,68 @@
 	.include "../inc/ascii.inc"
     .include "macros.inc" 
 
-;-------------------------------
-; W65C21 ACIA registers addresses
-;-------------------------------
-	ACIA_DATA = $D000
-	ACIA_STATUS = $D001 
-	ACIA_CMD = $D002
-	ACIA_CTRL = $D003
-	RX_FULL = 1<<4 ; receive buffer full is bit 4 
+;------------------------------------
+; W65C51 ACIA base address
+;------------------------------------
+    ACIA_BASE=$D000 
+    .INCLUDE "w65c51n.inc" 
 
-;-------------------------------
-; W65C22 VIA registers addresses
-;-------------------------------
-    VIA_IORB = $D060 ; input/output data register port B 
-    VIA_IORA = $D061 ; input/output data register port A
-    VIA_DDRB = $D062 ; Data direction register port B 
-    VIA_DDRA = $D063 ; Data direction register port A
-    VIA_T1CL =  $D064 ; timer1 low order counter 
-    VIA_T1CH =  $D065 ; timer1 high order counter 
-    VIA_T1LL =  $D066 ; timer1 low order latch 
-    VIA_T1LH =  $D067 ; timer 1 high order latch 
-    VIA_T2CL =  $D068 ; timer 2 low order counter 
-    VIA_T2CH = $D069  ; timere 2 high order counter 
-    VIA_SR  =  $D06A  ; shift register 
-    VIA_ACR =  $D06B  ; auxiliary control register 
-    VIA_PCR =  $D06C  ; peripheral control register 
-    VIA_IFR =  $D06D  ; interrupt flags register 
-    VIA_IER =  $D06E  ; interrupt enable register 
-    VIA_IORA_NHS = $D06F ; input/output data register A, no handshake 
+;-----------------------------------
+; W65C22 VIA base address
+;-----------------------------------
+    VIA_BASE = $D060
+    .INCLUDE "w65c22s.inc" 
 
-
-;----------------------------------    
-; VIA_ACR configuration 
-; To use CB1,CB2 for SPI transfert 
-; CB1 is SPI clock 
-; CB2 is data I/O
-; PB0 used as chip select output 
-; configure IRQ to trigger when shift is completed  
-;----------------------------------
-    SHIFT_IN = (2<<2) ; VIA_SR shift in on PHI2  control  in VIA_ACR 
-    SHIFT_OUT = (6<<2) ; VIA_SR shift out on PHI2 control in VIA_ACR 
-    SHIFT_DISABLE = (7<<2) ; VIA SR disabled
-    SR_IER=(1<<2) ; to set interrupt on shift register in VIA_IER 
-    SR_IFR=(1<<2) ; shift register interrupt flag in VIA_IFR 
-    T1_IER=(1<<6) ; timer 1 interrupt enable bit in VIA_IER 
-    T1_IFR=(1<<6) ; timer 1 interrupt flag bit in VIA_IFR 
-    T2_IER=(1<<5) ; timer 2 interrupt enable bit in VIA_IER 
-    T2_IFR=(1<<5) ; timer 2 interrupt flag bit in VIA_IFR 
-    FLASH_CS=(1<<0) ; PB0 used as chip select 
 
 ; Processor status register bits 
-    PSR_CARRY = 1
-    PSR_ZERO = 2
-    PSR_IRQ_DIS = 4
-    PSR_DMODE = 8 
-    PSR_BRK = 16 
-    PSR_OVF = 64 
-    PSR_NEG = 128 
+    PSR_CARRY = 1   ; carry|borrow bit 
+    PSR_ZERO = 2    ; ALU result is 0 
+    PSR_IRQ_DIS = 4 ; disable IRQ 
+    PSR_DMODE = 8   ; decimal mode 
+    PSR_BRK = 16    ; set by BRK instruction 
+    PSR_OVF = 64    ; ALU overflow 
+    PSR_NEG = 128   ; ALU signed negative result 
 
-   ; constants 
-	BUFF_SIZE=$20 ; keep it power of 2 <= 256 
-	IN   = $100-BUFF_SIZE 
+   ; system constants 
+	RX_BUFF_SIZE=$20 ; UART RX buffer size, keep it power of 2 
     TIB_ORG = $200
     TIB_SIZE = 128 
     PAD_SIZE = 128 
-    LOAD_ADR = $300 ; program load address 
+    PROG_LOAD = $300 ; program load address 
 
 ;----------------------------
 ; BOOLEAN FLAGS 
+; masks to be used with 
+; AND,OR,TRB,TSB instructions 
 ;----------------------------
-    F_SR_TX=1 ; SR set to transmit mode when 1 
-    F_TIMER=2 ; timer active when 1 
+    F_SR_TX=(1<<0) ; SR set to transmit mode when 1 
+    F_TIMER=(1<<1) ; timer active when 1 
+    F_SOUND=(1<<2) ; sound timer active 
+
+    RAM_SIZE=32768 ; installed RAM size 
+    CODE_SIZE=RAM_SIZE-PROG_LOAD ; maximum application code size  
 
 	.SEGMENT "DATA"
 ; string pointer for PUTS 
     .ORG 0
 MSEC: .res 4  ; millisecond counter
 TIMER: .res 2 ; msec timer   
+SND_TMR: .res 2 ; sound duration timer 
 SEED: .res 2 ; pseudo random number generator seed 
 FLAGS: .res 1 ; boolean flags 
-FREE_RAM: .res 2 ; address free RAM space after program load 
-BUF_ADR: .res 2 ; transaction buffer address
-BCOUNT: .res 2 ; transaction bytes count 
-FLASH_ADR: .res 3   ; 24 bits address to access external flash memory  
+HEAP_ADR: .res 2 ; address free RAM after program load 
+HEAP_FREE: .res 2 ; size free RAM after program load + allocated heap space 
+FLASH_BUFF: .res 2 ; FLASH memory transaction buffer address
+BCOUNT: .res 2 ; flash memory transaction bytes count 
+FLASH_ADR: .res 3   ; 24 bits flash memory address  
 RX_HEAD: .res 1  ; ACIA RX queue head pointer 
 RX_TAIL: .res 1  ; ACIA RX queue tail pointer 
 STR_PTR: .res 2  ; pointer to string printed by PUTS 
+RX_BUFF: .RES RX_BUFF_SIZE  
+PZ_FREE: .res 0  ; page zero free space *..$FF 
 
-; terminal input buffer.
-	.ORG IN
-RX_BUFFER: .RES BUFF_SIZE  
+
+PZ_FREE_SIZE=256-* ; size of page zero available to application  
 
 ; transaction input buffer 
     .ORG TIB_ORG 
@@ -118,12 +90,16 @@ RESET:
 ; initialize stack pointer     
     LDX   $FF 
     TXS 
-; set program address
-; all program space free 
-    LDA #>LOAD_ADR 
-    LDX #<LOAD_ADR 
-    STA FREE_RAM+1 
-    STX FREE_RAM          
+; set heap address  
+    LDA #>PROG_LOAD 
+    LDX #<PROG_LOAD 
+    STA HEAP_ADR+1 
+    STX HEAP_ADR 
+; available RAM space for programs     
+    LDA #>CODE_SIZE 
+    LDX #<CODE_SIZE 
+    STA HEAP_FREE+1
+    STX HEAP_FREE          
 ; intialize Status register 
 ; disable iterrupts 
     SEI 
@@ -143,42 +119,11 @@ DEBUG=1
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ; test code 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-.IF DEBUG=1
-TEST_PAUSE=1
-.IF TEST_PAUSE=1
-    LDY #5
-@LOOP:
-    _PUTS QBF
-    _PAUSE 1000
-    DEY 
-    BNE @LOOP   
+.IF DEBUG
+    .include "bios_test.s" 
 .ENDIF 
 
-TEST_RAND=1
-.IF TEST_RAND
-@R1:  
-    JSR RANDOMIZE 
-    JSR RAND
-    JSR PRT_HWORD 
-    JSR PRT_SPC 
-    _PAUSE 250 
-    BRA @R1    
-.ENDIF 
-
-TEST_FLASH=1
-.IF TEST_FLASH=1
-; test flash memory functions     
-    _PUTS WR_STR 
-
-
-.ENDIF 
     JMP RESET 
-
-WR_STR: .BYTE "testing write function",CR,0
-QBF: .BYTE "THE QUICK BROWN FOX JUMP OVER THE LAZY DOG.",CR,0 
-.ELSE 
-    JMP RESET  
-.ENDIF 
 
 BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0	
 
@@ -188,7 +133,7 @@ BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0
 ; initialize W65C51 ACIA and 
 ; terminal queue 
 ;-------------------------------
-    .PROC ACIA_INIT 
+ACIA_INIT: 
 ; clear input buffer 	
 	LDA #0 
 	STA RX_HEAD 
@@ -199,7 +144,6 @@ BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0
 	LDA #16
 	STA ACIA_CTRL
     RTS 
-    .ENDPROC 
 
 ;-----------------------------
 ; initialize W65C22 VIA 
@@ -211,14 +155,18 @@ BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0
 ; IRQ triggerred when byte 
 ; TX|RX completed
 ;-----------------------------
-    .PROC VIA_INIT
+
+    FLASH_CS=(1<<0) ; VIA PB0 used as chip select 
+
+VIA_INIT:
 ; configure PB0 as output
-    LDA #1 
-    STA VIA_DDRB
-    STA VIA_IORB ; CS0 high 
+    LDA #FLASH_CS 
+    TSB VIA_DDRB
+    TSB VIA_IORB ; CS0 high 
 ;  set timer1 for 1 msec interrupt 
-; mode 1 
-    LDA #(1<<6)
+; timer1 mode 1 and shift register mode 6  
+; default mode for shift register is SHIFT_OUT 
+    LDA #(T1_INTR_CONT<<ACR_T1_MODE)+(SHIFT_OUT_PHI2<<ACR_SR_MODE)
     STA VIA_ACR
 ; count base on Fsys=3.6864 Mhz
     LDA #<3686 
@@ -226,11 +174,11 @@ BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0
     LDA #>3686
     STA VIA_T1LH
     STA VIA_T1CH
-;enable T1 and SR interrupt 
-    LDA #(1<<7)+T1_IER 
+;enable T1 interrupt 
+    LDA #VIA_SET_IE+VIA_T1_IE  
     STA VIA_IER 
     RTS 
-    .ENDPROC 
+
 
 ;-------------------------------
 ; check for interrupt origin 
@@ -240,35 +188,35 @@ BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0
 ;   VIA   W65C22 
 ;   ACIA  W65C51 
 ;-------------------------------
-    .PROC INTR_SELECTOR
+INTR_SELECTOR:
     PHA 
-    LDA VIA_IFR 
-    BPL ACIA_TEST  
-; W65C22 VIA interrupt  
-    JMP VIA_INTR 
+    LDA #VIA_T1_IF
+    AND VIA_IFR 
+    BNE VIA_INTR 
 ; W65C51 ACIA interrupt
-ACIA_TEST:
-    LDA #RX_FULL 
+@ACIA_TEST:
+    LDA #(1<<ACIA_STATUS_RX_FULL) 
     AND ACIA_STATUS
-    BEQ EXIT  
+    BEQ @EXIT  
     JMP ACIA_HANDLER
-EXIT:
+@EXIT:
     PLA 
     RTI 
-    .ENDPROC 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FLASH memory basic functions 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-FLASH_READ_STATUS=5
-FLASH_WRITE_ENABLE=6 
-FLASH_WR=2 
-FLASH_RD=3 
-FLASH_ERASE_4K=$20
-FLASH_ERASE_32K=$52
-FLASH_ERASE_64K=$D8 
-FLASH_ERASE_ALL=$60
+FLASH_READ_STATUS=5   ; read status register 1
+FLASH_WRITE_ENABLE=6  ; enable write|erase 
+FLASH_WR=2          ; write {1..256} bytes 
+FLASH_RD=3          ; read n bytes 
+FLASH_ERASE_4K=$20  ; erase 4KB block 
+FLASH_ERASE_32K=$52 ; erase 32KB block 
+FLASH_ERASE_64K=$D8 ; erase 64KB block 
+FLASH_ERASE_ALL=$60 ; erase chip 
+FLASH_DEVID=$90 ; get device ID 
 FLASH_BUSY=1 
 
 ;------------------------------
@@ -278,8 +226,8 @@ FLASH_BUSY=1
 ; depending of state F_SR_TX
 ;------------------------------
 VIA_INTR:
-; test T1_IFR  
-    AND #T1_IFR  
+; test T1_IF  
+    AND #VIA_T1_IF   
     BEQ @EXIT  
 ; timer 2 interrupt handler 
 ; increment millisecond counter
@@ -296,20 +244,14 @@ VIA_INTR:
     LDA FLAGS 
     AND #F_TIMER 
     BEQ @EXIT
-    LDA TIMER 
-    SEC 
-    SBC #1 
-    STA TIMER 
-    LDA TIMER+1 
-    SBC #0 
-    STA TIMER+1
-    BPL @EXIT  
+    _DECW TIMER 
+    BNE @EXIT 
 ; timeout, reset timer flag
     LDA #F_TIMER 
     TRB FLAGS 
 @EXIT: 
-; clear all IF bits 
-    LDA #127  
+; clear T1 IF bit 
+    LDA #VIA_T1_IF
     STA VIA_IFR 
     PLA 
     RTI 
@@ -322,19 +264,18 @@ VIA_INTR:
 ;     A    byte to send 
 ;---------------------------------
 SEND_BYTE:
-    PHA 
-    LDA #SHIFT_OUT 
-    STA VIA_ACR 
+    PHA
+    _SWITCH_SR_OUT 
     _FLASH_SEL 
     PLA 
     STA VIA_SR  
 ; wait for SR interrupt flag set 
 WAIT_SR_IF: 
 @LOOP:
-    LDA #SR_IFR 
-    AND VIA_SR 
+    LDA #VIA_SR_IF 
+    AND VIA_IFR
     BEQ @LOOP   ; loop until shift out completed 
-    TRB VIA_SR ; reset interrupt flag 
+    STA VIA_IFR ; reset interrupt flag 
     RTS 
 
 
@@ -346,13 +287,9 @@ WAIT_SR_IF:
 ;------------------------------------
 RCV_BYTE:
 ; set shift in mode 
-    LDA #SHIFT_IN 
-    TSB VIA_ACR 
+    _SWITCH_SR_IN
     LDA VIA_SR ; start shifting 
     JSR WAIT_SR_IF ; wait shift completed 
-; disable shift register     
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR 
     LDA VIA_SR ; get byte 
     RTS 
  
@@ -363,25 +300,21 @@ RCV_BYTE:
 ; busy bit in flash SR1 is 1 when busy 
 ;---------------------------------
 WAIT_COMPLETED: 
+    _SWITCH_SR_OUT
     _FLASH_SEL ; enable flash memory 
-    LDA #SHIFT_OUT
-    TSB VIA_ACR ; set shift out mode 
+; send W25Q080 command 
     LDA #FLASH_READ_STATUS
     STA VIA_SR
     JSR WAIT_SR_IF  
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR ; disable shift register  
-    LDA #SHIFT_IN 
-    TSB VIA_ACR  ; enable shift in 
-    LDA VIA_SR ; start shifin  
-@LOOP: 
+; switch to shift in mode 
+    _SWITCH_SR_IN 
+@LOOP:
+    LDA VIA_SR ; start shifin   
     JSR WAIT_SR_IF ; wait shift in completed 
+    _FLASH_DESEL
     LDA VIA_SR 
     AND #FLASH_BUSY 
     BNE @LOOP 
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR ; disable shift register 
-    _FLASH_DESEL
     RTS 
 
 
@@ -390,8 +323,7 @@ WAIT_COMPLETED:
 ;  status register 
 ;------------------------------------
 ENABLE_WRITE:
-    LDA #SHIFT_OUT 
-    TSB VIA_ACR ; set shift out mode 
+    _SWITCH_SR_OUT
     _FLASH_SEL
     LDA #FLASH_WRITE_ENABLE
     STA VIA_SR   
@@ -414,7 +346,7 @@ ERASE_BLOCK:
 SEND_OP_CODE:
     STA VIA_SR 
     JSR WAIT_SR_IF
-    JSR SEND_ADR 
+    JSR FLASH_SEND_ADR 
     LDA #SHIFT_DISABLE
     TRB VIA_ACR 
     _FLASH_DESEL
@@ -428,7 +360,7 @@ SEND_OP_CODE:
 ;    flash select 
 ;    SR mode in shift out 
 ;--------------------------------------
-SEND_ADR:      
+FLASH_SEND_ADR:      
     LDA FLASH_ADR+2 
     STA VIA_SR 
     JSR WAIT_SR_IF 
@@ -450,8 +382,6 @@ ERASE_ALL:
     LDA #FLASH_ERASE_ALL
     STA VIA_SR 
     JSR WAIT_SR_IF 
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR 
     _FLASH_DESEL 
     JSR WAIT_COMPLETED 
     RTS 
@@ -462,7 +392,7 @@ ERASE_ALL:
 ;  input:
 ;      A    byte count 
 ;----------------------------------------
-    .PROC FLASH_WRITE 
+FLASH_WRITE: 
     STA BCOUNT 
     PHX 
     JSR ENABLE_WRITE
@@ -470,9 +400,9 @@ ERASE_ALL:
     LDA #FLASH_WR 
     STA VIA_SR 
     JSR WAIT_SR_IF
-    JSR SEND_ADR
+    JSR FLASH_SEND_ADR
 @LOOP:
-    LDA BUF_ADR,X 
+    LDA FLASH_BUFF,X 
     STA VIA_SR 
     JSR WAIT_SR_IF 
     INX 
@@ -483,8 +413,7 @@ ERASE_ALL:
     TRB VIA_ACR 
     JSR WAIT_COMPLETED 
     PLX 
-    RTS 
-    .ENDPROC 
+    RTS  
 
 ;------------------------------------------
 ; read a bloc of bytes from W25Q080 
@@ -493,15 +422,14 @@ FLASH_READ:
     PHX 
     LDA #FLASH_RD 
     JSR SEND_BYTE 
-    JSR SEND_ADR 
-    LDA #SHIFT_IN 
-    STA VIA_ACR ; set shift in mode 
+    JSR FLASH_SEND_ADR 
+    _SWITCH_SR_IN
     LDX #0
     LDA VIA_SR ; start shift in  
 @LOOP:
     JSR WAIT_SR_IF
     LDA VIA_SR 
-    STA BUF_ADR,X 
+    STA FLASH_BUFF,X 
     INX 
     DEC BCOUNT 
     BNE @LOOP 
@@ -511,7 +439,35 @@ FLASH_READ:
     PLX 
     RTS 
 
-
+;-----------------------------------
+; read FLASH chip mfg device ID 
+; output:
+;    A   devid 
+;    X   mfg id 
+;-----------------------------------
+FLASH_RD_DEVID: 
+    LDA #0 
+    STA FLASH_ADR 
+    STA FLASH_ADR+1
+    STA FLASH_ADR+2
+; send command 
+    _SET_SR_OUT
+    _FLASH_SEL
+    LDA #FLASH_DEVID
+    STA VIA_SR 
+    JSR WAIT_SR_IF
+    JSR FLASH_SEND_ADR
+    _SWITCH_SR_OFF
+    _SET_SR_IN 
+    LDA VIA_SR  ; start shifting 
+    JSR WAIT_SR_IF
+    LDA VIA_SR  ; read value, start next shifting 
+    TAX 
+    JSR WAIT_SR_IF ; 
+    _SWITCH_SR_OFF ; turn off shift register 
+    LDA VIA_SR 
+    _FLASH_DESEL
+    RTS 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; miscelanous functions
@@ -523,14 +479,13 @@ FLASH_READ:
 ;   A    timer high byte 
 ;   X    timer low byte 
 ;------------------------------------------
-    .PROC SET_TIMER 
+SET_TIMER: 
     STA TIMER+1 
     STX TIMER 
 ; set TIMER flag 
     LDA #F_TIMER 
     TSB FLAGS 
-    RTS 
-    .ENDPROC 
+    RTS  
 
 ;-----------------------------------
 ; suspend execution for msec 
@@ -602,31 +557,31 @@ RANDOMIZE:
 ; W65C51 ACIA triggered interrupt 
 ; UART receive Interrupt handler
 ;--------------------------------
-    .PROC ACIA_HANDLER
+ACIA_HANDLER:
                 PHX 
                 LDA     ACIA_STATUS 
-                AND     #RX_FULL ; check rx bit 
-                BEQ     NOT_ACIA    ; interrupt was not trigerred by ACIA 
+                AND     #(1<<ACIA_STATUS_RX_FULL) ; check rx bit 
+                BEQ     @NOT_ACIA    ; interrupt was not trigerred by ACIA 
                 LDA     ACIA_DATA 
 				CMP     #CTRL_C 
-                BNE     RX1
+                BNE     @RX1
                 JMP     RESET ; CTRL+C reset computer 
-RX1:
+@RX1:
                 CMP     #127 
-                BPL     RX_DISCARD   ; ignore codes >126
-RX_ACCEPT:
+                BPL     @RX_DISCARD   ; ignore codes >126
+@RX_ACCEPT:
                 LDX     RX_HEAD ; update queue head index 
-				STA     IN,X 
+				STA     RX_BUFF,X 
 				INX
 				TXA 
-				AND     #BUFF_SIZE-1 
+				AND     #RX_BUFF_SIZE-1 
 				STA     RX_HEAD  
-NOT_ACIA:
-RX_DISCARD:
+@NOT_ACIA:
+@RX_DISCARD:
                 PLX
                 PLA
                 RTI 
-    .ENDPROC 
+
 
 ;---------------------------
 ; send character to terminal
@@ -683,7 +638,7 @@ PUTS:
     RTS  
 
 ;-----------------------------
-; get character from IN buffer
+; get character from RX_BUFF buffer
 ; output:
 ;     A    0||character 
 ;----------------------------- 
@@ -692,11 +647,11 @@ PUTS:
 	CMP      RX_HEAD 
 	BEQ      @NO_CHAR 
 	TAX
-	LDA      IN,X 
+	LDA      RX_BUFF,X 
 	PHA 
 	INX                     ; update queue tail index 
 	TXA
-	AND     #BUFF_SIZE-1   
+	AND     #RX_BUFF_SIZE-1   
 	STA     RX_TAIL
 	PLA    
 	RTS 

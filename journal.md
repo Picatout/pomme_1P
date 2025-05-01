@@ -3,9 +3,14 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-04-30
+
+* Travail sur le BIOS. Problème avec l'interface de la mémoire FLASH. 
+
 ### 2025-04-29
 
 * Travail sur le BIOS. 
+  * Ajout de **RAND** et **RANDOMIZE**. 
 
 ### 2025-04-28 
 
