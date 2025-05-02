@@ -3,6 +3,12 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-05-02
+
+* Travail sur BIOS.
+  * Tester **ENABLE_WRITE** et **FLASH_READ_STATUS**
+  * Les problèmes avec la lecteur/écriture de la mémoire FLASH semblent réglés. j'avais une mauvaise compréhension des instruction d'indirection du MPU 6502.
+
 ### 2025-05-01
 
 * Travail sur BIOS.

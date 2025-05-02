@@ -30,11 +30,14 @@
     PSR_NEG = 128   ; ALU signed negative result 
 
    ; system constants 
+    RAM_SIZE=32768 ; installed RAM size 
 	RX_BUFF_SIZE=$20 ; UART RX buffer size, keep it power of 2 
     TIB_ORG = $200
     TIB_SIZE = 128 
     PAD_SIZE = 128 
     PROG_LOAD = $300 ; program load address 
+    CODE_SIZE=RAM_SIZE-PROG_LOAD ; maximum application code size  
+
 
 ;----------------------------
 ; BOOLEAN FLAGS 
@@ -44,9 +47,6 @@
     F_SR_TX=(1<<0) ; SR set to transmit mode when 1 
     F_TIMER=(1<<1) ; timer active when 1 
     F_SOUND=(1<<2) ; sound timer active 
-
-    RAM_SIZE=32768 ; installed RAM size 
-    CODE_SIZE=RAM_SIZE-PROG_LOAD ; maximum application code size  
 
 	.SEGMENT "DATA"
 ; string pointer for PUTS 
@@ -91,15 +91,15 @@ RESET:
     LDX   $FF 
     TXS 
 ; set heap address  
-    LDA #>PROG_LOAD 
-    LDX #<PROG_LOAD 
-    STA HEAP_ADR+1 
-    STX HEAP_ADR 
+    LDA #<PROG_LOAD 
+    LDX #>PROG_LOAD 
+    STA HEAP_ADR 
+    STX HEAP_ADR+1 
 ; available RAM space for programs     
-    LDA #>CODE_SIZE 
-    LDX #<CODE_SIZE 
-    STA HEAP_FREE+1
-    STX HEAP_FREE          
+    LDA #<CODE_SIZE 
+    LDX #>CODE_SIZE 
+    STA HEAP_FREE
+    STX HEAP_FREE+1          
 ; intialize Status register 
 ; disable iterrupts 
     SEI 
@@ -208,16 +208,18 @@ INTR_SELECTOR:
 ;;  FLASH memory basic functions 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-FLASH_READ_STATUS=5   ; read status register 1
-FLASH_WRITE_ENABLE=6  ; enable write|erase 
-FLASH_WR=2          ; write {1..256} bytes 
-FLASH_RD=3          ; read n bytes 
-FLASH_ERASE_4K=$20  ; erase 4KB block 
-FLASH_ERASE_32K=$52 ; erase 32KB block 
-FLASH_ERASE_64K=$D8 ; erase 64KB block 
-FLASH_ERASE_ALL=$60 ; erase chip 
-FLASH_DEVID=$90 ; get device ID 
-FLASH_BUSY=1 
+CODE_READ_SR1=5   ; read status register 1
+CODE_READ_SR2=$35 ; read status register 2fff
+CODE_SET_WEL=6  ; set WEL bit in status register 1
+CODE_RST_WEL=4 ; reset WEL bit in status register 1
+CODE_WRITE=2          ; write {1..256} bytes 
+CODE_READ=3          ; read n bytes 
+CODE_ERASE_4K=$20  ; erase 4KB block 
+CODE_ERASE_32K=$52 ; erase 32KB block 
+CODE_ERASE_64K=$D8 ; erase 64KB block 
+CODE_ERASE_CHIP=$60 ; erase chip 
+CODE_DEV_ID=$90 ; get device ID 
+BUSY_BIT=1 
 
 ;------------------------------
 ; VIA shift register interrupt 
@@ -263,7 +265,7 @@ VIA_INTR:
 ;  input:
 ;     A    byte to send 
 ;---------------------------------
-SEND_BYTE:
+FLASH_SEND_CODE:
     PHA
     _SET_SR_OUT 
     _FLASH_SEL 
@@ -300,47 +302,66 @@ RCV_BYTE:
 ; busy bit in flash SR1 is 1 when busy 
 ;---------------------------------
 WAIT_COMPLETED: 
-    _SET_SR_OUT
-    _FLASH_SEL ; enable flash memory 
-; send W25Q080 command 
-    LDA #FLASH_READ_STATUS
-    STA VIA_SR
-    JSR WAIT_SR_IF  
-; switch to shift in mode 
-    _SET_SR_IN 
-    LDA VIA_SR ; start shifin   
-@LOOP:
-    JSR WAIT_SR_IF ; wait shift in completed 
-    LDA VIA_SR 
-    AND #FLASH_BUSY 
-    BNE @LOOP 
-    _FLASH_DESEL
+    JSR FLASH_READ_SR1
+    AND #BUSY_BIT 
+    BNE WAIT_COMPLETED 
     RTS 
-
 
 ;------------------------------------
 ;  enable write bite in W25Q080 
 ;  status register 
 ;------------------------------------
-ENABLE_WRITE:
+FLASH_SET_WEL:
     _SET_SR_OUT
     _FLASH_SEL
-    LDA #FLASH_WRITE_ENABLE
+    LDA #CODE_SET_WEL
     STA VIA_SR   
     JSR WAIT_SR_IF
     _FLASH_DESEL 
     RTS 
 
+ ;---------------------------
+ ; reset WEL bit in status 
+ ; register 1 
+ ;---------------------------   
+FLASH_RST_WEL:
+    _SET_SR_OUT
+    _FLASH_SEL
+    LDA #CODE_RST_WEL
+    STA VIA_SR   
+    JSR WAIT_SR_IF
+    _FLASH_DESEL 
+    RTS 
+
+;--------------------------------------
+; read W25Q080 status register 1 
+;--------------------------------------
+FLASH_READ_SR1:
+    _SET_SR_OUT 
+    _FLASH_SEL 
+    LDA #CODE_READ_SR1
+    STA VIA_SR 
+    JSR WAIT_SR_IF 
+    _SET_SR_IN 
+    LDA VIA_SR ; start shift in 
+    JSR WAIT_SR_IF ; wait completed 
+    _FLASH_DESEL
+    LDA VIA_SR  ; get input value 
+    PHA 
+    _SWITCH_SR_OFF
+    PLA 
+    RTS 
+
 ;-------------------------------------
 ;  erase block in W25Q080 
 ;  input:
-;     A   OPCODE: {FLASH_ERASE_4K,FLASH_ERASE_32K,
-;                  FLASH_ERASE_64K}
+;     A   OPCODE: {CODE_ERASE_4K,CODE_ERASE_32K,
+;                  CODE_ERASE_64K}
 ;     farptr  block address 
 ;-------------------------------------
 ERASE_BLOCK:
     PHA 
-    JSR ENABLE_WRITE 
+    JSR FLASH_SET_WEL 
     _FLASH_SEL
     PLA 
 SEND_OP_CODE:
@@ -376,14 +397,14 @@ FLASH_SEND_ADR:
 ;  OPCODE $60 
 ;---------------------------------------
 ERASE_ALL:
-    JSR ENABLE_WRITE 
+    JSR FLASH_SET_WEL 
     _FLASH_SEL 
-    LDA #FLASH_ERASE_ALL
+    LDA #CODE_ERASE_CHIP
     STA VIA_SR 
     JSR WAIT_SR_IF 
+    _SWITCH_SR_OFF
     _FLASH_DESEL 
-    JSR WAIT_COMPLETED 
-    RTS 
+    JMP WAIT_COMPLETED 
  
 
 ;----------------------------------------
@@ -392,48 +413,55 @@ ERASE_ALL:
 ;      A    byte count 
 ;----------------------------------------
 FLASH_WRITE: 
+    PHY 
     STA BCOUNT 
-    PHX 
-    JSR ENABLE_WRITE
+    JSR FLASH_SET_WEL
     _FLASH_SEL
-    LDA #FLASH_WR 
+    LDA #CODE_WRITE 
     STA VIA_SR 
     JSR WAIT_SR_IF
     JSR FLASH_SEND_ADR
+    LDY #0 
 @LOOP:
-    LDA FLASH_BUFF,X 
+    LDA (FLASH_BUFF),Y 
     STA VIA_SR 
     JSR WAIT_SR_IF 
-    INX 
+    INY 
     DEC BCOUNT 
     BNE @LOOP
     _SWITCH_SR_OFF 
     _FLASH_DESEL
     JSR WAIT_COMPLETED 
-    PLX 
+    PLY 
     RTS  
 
 ;------------------------------------------
 ; read a bloc of bytes from W25Q080 
+; {1..256}
+; input:
+;   A  BCOUNT
+;  FLASH_BUFF  input buffer 
+;  FLASH_ADR   flash address to read  
 ;------------------------------------------
 FLASH_READ: 
-    PHX 
-    LDA #FLASH_RD 
-    JSR SEND_BYTE 
+    PHY
+    STA BCOUNT 
+    LDA #CODE_READ 
+    JSR FLASH_SEND_CODE 
     JSR FLASH_SEND_ADR 
-    _SWITCH_SR_IN
-    LDX #0
+    _SET_SR_IN
+    LDY #0
     LDA VIA_SR ; start shift in  
 @LOOP:
     JSR WAIT_SR_IF
     LDA VIA_SR 
-    STA FLASH_BUFF,X 
-    INX 
+    STA (FLASH_BUFF),Y 
+    INY 
     DEC BCOUNT 
     BNE @LOOP 
     _FLASH_DESEL 
     _SWITCH_SR_OFF 
-    PLX 
+    PLY 
     RTS 
 
 ;-----------------------------------
@@ -450,7 +478,7 @@ FLASH_RD_DEVID:
 ; send command 
     _SET_SR_OUT
     _FLASH_SEL
-    LDA #FLASH_DEVID
+    LDA #CODE_DEV_ID
     STA VIA_SR 
     JSR WAIT_SR_IF
     JSR FLASH_SEND_ADR
