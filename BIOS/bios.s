@@ -856,16 +856,7 @@ FNTABLE:
 ;----------------------------
     .SEGMENT "MONITOR" 
     .ORG $FF00 
-MONITOR: 
-    JSR GETC
-    CMP #'Q' 
-    BEQ @EXIT  
-@ECHO:      
-    JSR PUTC 
-    BRA MONITOR    
-@EXIT:
-    JSR NEW_LINE
-    RTS 
+    .include "p1+Monitor.s"
 
 
 	.SEGMENT "VECTORS" 

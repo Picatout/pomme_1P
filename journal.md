@@ -8,7 +8,8 @@ https://github.com/picatout/pomme-1P
 * Travail sur BIOS.
   * Tester **ENABLE_WRITE** et **FLASH_READ_STATUS**
   * Les problèmes avec la lecteur/écriture de la mémoire FLASH semblent réglés. j'avais une mauvaise compréhension des instruction d'indirection du MPU 6502.
-
+  * Restauration du p1+Monitor 
+  
 ### 2025-05-01
 
 * Travail sur BIOS.
