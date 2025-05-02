@@ -6,6 +6,11 @@ https://github.com/picatout/pomme-1P
 ### 2025-05-01
 
 * Travail sur BIOS.
+  * Corrigé bogue matériel pin 32 du socket du VIA était mal soudée. 
+  * Maintenant il est possible de lire le DEVICE ID correctement.
+  * Fonction ERASE_ALL ne fonctionne pas. 
+  * Fonction FLASH_WRITE ne fonctionne pas.
+  * La fonction FLASH_READ semble fonctionner. À vérifier.
 
 ### 2025-04-30
 

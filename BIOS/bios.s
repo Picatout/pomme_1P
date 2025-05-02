@@ -166,7 +166,7 @@ VIA_INIT:
 ;  set timer1 for 1 msec interrupt 
 ; timer1 mode 1 and shift register mode 6  
 ; default mode for shift register is SHIFT_OUT 
-    LDA #(T1_INTR_CONT<<ACR_T1_MODE)+(SHIFT_OUT_PHI2<<ACR_SR_MODE)
+    LDA #(T1_INTR_CONT<<ACR_T1_MODE)
     STA VIA_ACR
 ; count base on Fsys=3.6864 Mhz
     LDA #<3686 
@@ -265,7 +265,7 @@ VIA_INTR:
 ;---------------------------------
 SEND_BYTE:
     PHA
-    _SWITCH_SR_OUT 
+    _SET_SR_OUT 
     _FLASH_SEL 
     PLA 
     STA VIA_SR  
@@ -287,7 +287,7 @@ WAIT_SR_IF:
 ;------------------------------------
 RCV_BYTE:
 ; set shift in mode 
-    _SWITCH_SR_IN
+    _SET_SR_IN
     LDA VIA_SR ; start shifting 
     JSR WAIT_SR_IF ; wait shift completed 
     LDA VIA_SR ; get byte 
@@ -300,21 +300,21 @@ RCV_BYTE:
 ; busy bit in flash SR1 is 1 when busy 
 ;---------------------------------
 WAIT_COMPLETED: 
-    _SWITCH_SR_OUT
+    _SET_SR_OUT
     _FLASH_SEL ; enable flash memory 
 ; send W25Q080 command 
     LDA #FLASH_READ_STATUS
     STA VIA_SR
     JSR WAIT_SR_IF  
 ; switch to shift in mode 
-    _SWITCH_SR_IN 
-@LOOP:
+    _SET_SR_IN 
     LDA VIA_SR ; start shifin   
+@LOOP:
     JSR WAIT_SR_IF ; wait shift in completed 
-    _FLASH_DESEL
     LDA VIA_SR 
     AND #FLASH_BUSY 
     BNE @LOOP 
+    _FLASH_DESEL
     RTS 
 
 
@@ -323,7 +323,7 @@ WAIT_COMPLETED:
 ;  status register 
 ;------------------------------------
 ENABLE_WRITE:
-    _SWITCH_SR_OUT
+    _SET_SR_OUT
     _FLASH_SEL
     LDA #FLASH_WRITE_ENABLE
     STA VIA_SR   
@@ -347,8 +347,7 @@ SEND_OP_CODE:
     STA VIA_SR 
     JSR WAIT_SR_IF
     JSR FLASH_SEND_ADR 
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR 
+    _SWITCH_SR_OFF 
     _FLASH_DESEL
     JSR WAIT_COMPLETED
     RTS 
@@ -408,9 +407,8 @@ FLASH_WRITE:
     INX 
     DEC BCOUNT 
     BNE @LOOP
+    _SWITCH_SR_OFF 
     _FLASH_DESEL
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR 
     JSR WAIT_COMPLETED 
     PLX 
     RTS  
@@ -434,8 +432,7 @@ FLASH_READ:
     DEC BCOUNT 
     BNE @LOOP 
     _FLASH_DESEL 
-    LDA #SHIFT_DISABLE
-    TRB VIA_ACR 
+    _SWITCH_SR_OFF 
     PLX 
     RTS 
 
@@ -457,15 +454,16 @@ FLASH_RD_DEVID:
     STA VIA_SR 
     JSR WAIT_SR_IF
     JSR FLASH_SEND_ADR
-    _SWITCH_SR_OFF
     _SET_SR_IN 
     LDA VIA_SR  ; start shifting 
     JSR WAIT_SR_IF
-    LDX VIA_SR  ; read value, start next shifting  
-    JSR WAIT_SR_IF 
-    _SWITCH_SR_OFF ; turn off shift register 
+    LDX VIA_SR  ; read value, start next shifting   
+    JSR WAIT_SR_IF
     LDA VIA_SR 
+    PHA 
+    _SWITCH_SR_OFF ; turn off shift register 
     _FLASH_DESEL
+    PLA 
     RTS 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -663,9 +661,6 @@ QCHAR:
 	AND     #RX_BUFF_SIZE-1   
 	STA     RX_TAIL
 	PLA    
-	RTS 
-@NO_CHAR:
-	LDA #0 
 	RTS 
 
 ;-------------------------	

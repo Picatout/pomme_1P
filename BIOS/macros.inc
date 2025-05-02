@@ -52,12 +52,16 @@
 
    ; set VIA shift register to input mode 
    .MACRO _SET_SR_IN   
+      LDA #SHIFT_MASK 
+      TRB VIA_ACR 
       LDA #(SHIFT_IN_PHI2<<ACR_SR_MODE)
       TSB VIA_ACR 
    .ENDMACRO 
 
    ; set VIA shift register to output mode 
    .MACRO _SET_SR_OUT 
+      LDA #SHIFT_MASK 
+      TRB VIA_ACR 
       LDA #(SHIFT_OUT_PHI2<<ACR_SR_MODE)
       TSB VIA_ACR 
    .ENDMACRO 
