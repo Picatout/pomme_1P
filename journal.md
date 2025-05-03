@@ -9,7 +9,13 @@ https://github.com/picatout/pomme-1P
   * Tester **ENABLE_WRITE** et **FLASH_READ_STATUS**
   * Les problèmes avec la lecteur/écriture de la mémoire FLASH semblent réglés. j'avais une mauvaise compréhension des instruction d'indirection du MPU 6502.
   * Restauration du p1+Monitor 
-  
+  * Déplacer le p1+Monitor à l'adresse 0xFE00  car sa taille va augmenté par ajout de fonctionnalités.
+    * ADR@PAGE  ssd page load at ADR  
+    * ADR!PAGE  ssd store data at page 
+    * SECTORX  erase ssd sector
+    *  '*'  erasee chip  
+    * Quoted string accepted as data to store functions. 
+
 ### 2025-05-01
 
 * Travail sur BIOS.
