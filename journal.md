@@ -3,6 +3,19 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-05-03
+
+* Poursuite du travail sur [p1+Monitor.s](BIOS/p1+Monitor.s).
+  * Réussie à déboguer le moniteur 
+* Ajout des commandes suivantes au moniteur:
+  *	ADR'R'&lt;CR&gt;  run application at ADR 
+  *	SECT#'X'&lt;CR&gt;  erase W25Q080 SECTOR# 
+  *	'*'&lt;CR&gt;  erase W25Q080 chip  
+  * ADR'!'PAGE&lt;CR&gt; store 256 memory bytes in W25Q080 flash memory 
+  * ADR'@'PAGE&lt;CR&gt; load 256 bytes from W25Q080 to memory 
+  *'Q'&lt;CR&gt; quit monitor 
+
+
 ### 2025-05-02
 
 * Travail sur BIOS.

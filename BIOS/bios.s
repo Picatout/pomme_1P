@@ -58,6 +58,7 @@ SEED: .res 2 ; pseudo random number generator seed
 FLAGS: .res 1 ; boolean flags 
 HEAP_ADR: .res 2 ; address free RAM after program load 
 HEAP_FREE: .res 2 ; size free RAM after program load + allocated heap space 
+FLASH_SIZE: .res 2 ; W25Q080|160 last page (256 bytes), i.e. W25Q080 -> $FFFF (0..4095) , W25Q160 -> $FFFF (0..65535)
 FLASH_BUFF: .res 2 ; FLASH memory transaction buffer address
 BCOUNT: .res 2 ; flash memory transaction bytes count 
 FLASH_ADR: .res 3   ; 24 bits flash memory address  
@@ -108,12 +109,25 @@ RESET:
 ; initialize VIA to interface to 
 ; W25Q080DV flash memory 
     JSR VIA_INIT
+;get flash memory size 
+    LDA #$FF 
+    STA FLASH_SIZE 
+    JSR FLASH_RD_DEVID 
+    CMP #$13 
+    BNE @W160   
+    LDA #$F  ; W25Q080 1MB 
+    BRA @STORE_SIZE      
+@W160:  
+    LDA #$FF ; W25Q160 16MB 
+@STORE_SIZE:
+    STA FLASH_SIZE+1
 ; enable interrupts 
     CLI 
 ; print BIOS information 
     JSR CLS ; clear terminal screen 
     _PUTS BIOS_INFO 
     JSR MONITOR       
+    JSR RANDOMIZE 
 
 DEBUG=1 
 ;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -357,7 +371,7 @@ FLASH_READ_SR1:
 ;  input:
 ;     A   OPCODE: {CODE_ERASE_4K,CODE_ERASE_32K,
 ;                  CODE_ERASE_64K}
-;     farptr  block address 
+;     FLASH_ADR  block address 
 ;-------------------------------------
 ERASE_BLOCK:
     PHA 
