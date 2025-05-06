@@ -6,4 +6,5 @@
   (lib (name "my74HCxx")(type "KiCad")(uri "${KIPRJMOD}/my74HCxx.kicad_sym")(options "")(descr ""))
   (lib (name "stm8s103f3")(type "KiCad")(uri "${KIPRJMOD}/stm8s103f3.kicad_sym")(options "")(descr ""))
   (lib (name "W25Q80DV")(type "KiCad")(uri "${KIPRJMOD}/W25Q80DV.kicad_sym")(options "")(descr ""))
+  (lib (name "audio_amp")(type "KiCad")(uri "${KIPRJMOD}/audio_amp.kicad_sym")(options "")(descr ""))
 )
