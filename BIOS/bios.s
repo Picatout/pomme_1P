@@ -66,6 +66,7 @@ RX_HEAD: .res 1  ; ACIA RX queue head pointer
 RX_TAIL: .res 1  ; ACIA RX queue tail pointer 
 STR_PTR: .res 2  ; pointer to string printed by PUTS 
 RX_BUFF: .RES RX_BUFF_SIZE  
+ACC16: .res 2 ; 16 bits accumulator 
 PZ_FREE: .res 0  ; page zero free space *..$FF 
 
 
@@ -171,26 +172,26 @@ ACIA_INIT:
 ;-----------------------------
 
     FLASH_CS=(1<<0) ; VIA PB0 used as chip select 
+    MS_DELAY=3680 ; for 1msec delay 
 
 VIA_INIT:
-; configure PB0 as output
+; configure PB0 as W25Q080 ~CS output
     LDA #FLASH_CS 
     TSB VIA_DDRB
     TSB VIA_IORB ; CS0 high 
-;  set timer1 for 1 msec interrupt 
-; timer1 mode 1 and shift register mode 6  
-; default mode for shift register is SHIFT_OUT 
+ ;configure PB7 as SQUARE WAVE output 
+ ;using timer 1 as generator  
+    LDA #128 
+    TSB VIA_DDRB
     LDA #(T1_INTR_CONT<<ACR_T1_MODE)
     STA VIA_ACR
-; count base on Fsys=3.6864 Mhz
-    LDA #<3686 
-    STA VIA_T1CL
-    LDA #>3686
-    STA VIA_T1LH
-    STA VIA_T1CH
-;enable T1 interrupt 
-    LDA #VIA_SET_IE+VIA_T1_IE  
-    STA VIA_IER 
+; configure 1 msec delay on TIMER2 
+    LDA #<MS_DELAY 
+    STA VIA_T2CL 
+    LDA #>MS_DELAY 
+    STA VIA_T2CH 
+    LDA #VIA_SET_IE+VIA_T2_IE 
+    STA VIA_IER  
     RTS 
 
 
@@ -204,7 +205,7 @@ VIA_INIT:
 ;-------------------------------
 INTR_SELECTOR:
     PHA  
-    LDA #VIA_T1_IF
+    LDA #VIA_T2_IF 
     AND VIA_IFR 
     BNE VIA_INTR 
 ; W65C51 ACIA interrupt
@@ -242,12 +243,16 @@ BUSY_BIT=1
 ; depending of state F_SR_TX
 ;------------------------------
 VIA_INTR:
-; test T1_IF  
-    AND #VIA_T1_IF   
-    BEQ @EXIT  
-; timer 2 interrupt handler 
-; increment millisecond counter
-; this is a 32 bits variable  
+; compensate T2CL for 
+; interrupt latency 
+    CLC 
+    LDA #<MS_DELAY 
+    ADC VIA_T2CL 
+    STA VIA_T2CL
+;restart timer 2      
+    LDA #>MS_DELAY
+    STA VIA_T2CH 
+; increment MSEC variable 
 @TMR1_INTR: 
     INC MSEC 
     BNE @TMR_DECR 
@@ -255,20 +260,30 @@ VIA_INTR:
     BNE @TMR_DECR 
     INC MSEC+2 
     BNE @TMR_DECR 
-    INC MSEC+3 
-@TMR_DECR: ; decrement timer is enabled  
+    INC MSEC+3
+; decrement timer if enabled     
+@TMR_DECR:   
     LDA FLAGS 
     AND #F_TIMER 
-    BEQ @EXIT
+    BEQ @DEC_SND_TIMER 
     _DECW TIMER 
     BNE @EXIT 
 ; timeout, reset timer flag
     LDA #F_TIMER 
     TRB FLAGS 
+;decrement sound timer if enabled     
+@DEC_SND_TIMER: 
+    LDA FLAGS 
+    AND F_SOUND
+    BEQ @EXIT 
+    _DECW SND_TMR
+    BNE @EXIT 
+; stop sound 
+    LDA #F_SOUND 
+    TRB FLAGS 
+; stop timer 1 square wave generator  
+    LDA #(T1_INTR_LOAD<<ACR_T1_CTRL)   
 @EXIT: 
-; clear T1 IF bit 
-    LDA #VIA_T1_IF
-    STA VIA_IFR 
     PLA 
     RTI 
 
@@ -541,6 +556,21 @@ PAUSE:
     BNE @WAIT 
     RTS     
 
+;-----------------------------------
+; sound a tone 
+; input:
+;   SND_TMR   duration in msec 
+;   A:X       timer1 count  
+;------------------------------------
+TONE:
+; set timer1 to square wave generator mode 
+    LDA #(T1_PB7_SQRWAV<<ACR_T1_MODE)
+    STA VIA_ACR 
+    LDA #F_SOUND
+    TSB FLAGS 
+    STX VIA_T1LL 
+    STX VIA_T1LH 
+    RTS 
 
 ;---------------------------------------
 ; 16 bits linear feedback shift register 

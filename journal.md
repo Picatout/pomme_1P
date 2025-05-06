@@ -3,6 +3,14 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-05-06 
+
+* Travail sur BIOS 
+  * Modifié l'utilisation des minuterie du **VIA** (W65C22).
+    * TIMER1 utilisé comme générateur d'onde carré pour la fonction **TONE** du BIOS 
+    * TIMER2 utilisé pour une interruption au milliseconde 
+  * Ajout de la fonction BIOS **TONE**  
+
 ### 2025-05-03
 
 * Poursuite du travail sur [p1+Monitor.s](BIOS/p1+Monitor.s).
