@@ -11,6 +11,8 @@ https://github.com/picatout/pomme-1P
     * TIMER2 utilisé pour une interruption au milliseconde 
   * Ajout de la fonction BIOS **TONE**  
 
+* Modification de la schématique, carte SSD + SON ajouté.
+
 ### 2025-05-03
 
 * Poursuite du travail sur [p1+Monitor.s](BIOS/p1+Monitor.s).
