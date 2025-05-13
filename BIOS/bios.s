@@ -37,8 +37,8 @@
     PAD_SIZE = 128 
     PROG_LOAD = $300 ; program load address 
     CODE_SIZE=RAM_SIZE-PROG_LOAD ; maximum application code size  
-
-
+   ; parameter stack 32 words  
+ 
 ;----------------------------
 ; BOOLEAN FLAGS 
 ; masks to be used with 
@@ -67,10 +67,10 @@ RX_TAIL: .res 1  ; ACIA RX queue tail pointer
 STR_PTR: .res 2  ; pointer to string printed by PUTS 
 RX_BUFF: .RES RX_BUFF_SIZE  
 ACC16: .res 2 ; 16 bits accumulator 
-PZ_FREE: .res 0  ; page zero free space *..$FF 
+ZP_FREE: .res 0  ; zero page free space *..$BF  
 
 
-PZ_FREE_SIZE=256-* ; size of page zero available to application  
+ZP_FREE_SIZE=$C0-* ; size of zero page available to application variables 
 
 ; transaction input buffer 
     .ORG TIB_ORG 
@@ -82,6 +82,8 @@ PAD: .RES PAD_SIZE
 	.CODE  
     .ORG $E000 
 
+    .include "stack.s" 
+
 ; BIOS code here 
 
 ;-----------------------------
@@ -90,25 +92,25 @@ PAD: .RES PAD_SIZE
 ;-----------------------------    
 RESET:	
 ; initialize stack pointer     
-    LDX   $FF 
-    TXS 
+    LDX #$FF ;parameter stack empty 
+    TXS      ; hardware stack empty 
 ; set heap address  
     LDA #<PROG_LOAD 
-    LDX #>PROG_LOAD 
     STA HEAP_ADR 
-    STX HEAP_ADR+1 
+    LDA #>PROG_LOAD 
+    STA HEAP_ADR+1 
 ; available RAM space for programs     
     LDA #<CODE_SIZE 
-    LDX #>CODE_SIZE 
     STA HEAP_FREE
-    STX HEAP_FREE+1          
+    LDA #>CODE_SIZE 
+    STA HEAP_FREE+1          
 ; intialize Status register 
 ; disable iterrupts 
     SEI 
 ; initialize ACIA and terminal 
     JSR ACIA_INIT 
 ; initialize VIA to interface to 
-; W25Q080DV flash memory 
+; W25Qxxx flash memory 
     JSR VIA_INIT
 ;get flash memory size 
     LDA #$FF 
@@ -128,6 +130,7 @@ RESET:
     JSR CLS ; clear terminal screen 
     _PUTS BIOS_INFO 
     JSR MONITOR       
+DEFAULT_APP:
     JSR RANDOMIZE 
 
 DEBUG=1 
@@ -150,9 +153,8 @@ BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0
 ;-------------------------------
 ACIA_INIT: 
 ; clear input buffer 	
-	LDA #0 
-	STA RX_HEAD 
-	STA RX_TAIL  
+	STZ RX_HEAD 
+	STZ RX_TAIL  
 ; SETUP ACIA FOR 115200 BAUD,8N1 
 	LDA #$89       ; DTR ready, no parity
 	STA ACIA_CMD   ; 
@@ -179,12 +181,9 @@ VIA_INIT:
     LDA #FLASH_CS 
     TSB VIA_DDRB
     TSB VIA_IORB ; CS0 high 
- ;configure PB7 as SQUARE WAVE output 
- ;using timer 1 as generator  
-    LDA #128 
-    TSB VIA_DDRB
-    LDA #(T1_INTR_CONT<<ACR_T1_MODE)
-    STA VIA_ACR
+; set PB7 as output for square wave 
+    LDA #(1<<7)
+    TSB VIA_DDRB 
 ; configure 1 msec delay on TIMER2 
     LDA #<MS_DELAY 
     STA VIA_T2CL 
@@ -274,15 +273,12 @@ VIA_INTR:
 ;decrement sound timer if enabled     
 @DEC_SND_TIMER: 
     LDA FLAGS 
-    AND F_SOUND
+    AND #F_SOUND
     BEQ @EXIT 
     _DECW SND_TMR
     BNE @EXIT 
-; stop sound 
-    LDA #F_SOUND 
-    TRB FLAGS 
-; stop timer 1 square wave generator  
-    LDA #(T1_INTR_LOAD<<ACR_T1_CTRL)   
+; stop sound
+    _TONE_OFF 
 @EXIT: 
     PLA 
     RTI 
@@ -500,10 +496,9 @@ FLASH_READ:
 ;    X   mfg id 
 ;-----------------------------------
 FLASH_RD_DEVID: 
-    LDA #0 
-    STA FLASH_ADR 
-    STA FLASH_ADR+1
-    STA FLASH_ADR+2
+    STZ FLASH_ADR 
+    STZ FLASH_ADR+1
+    STZ FLASH_ADR+2
 ; send command 
     _SET_SR_OUT
     _FLASH_SEL
@@ -522,6 +517,18 @@ FLASH_RD_DEVID:
     _FLASH_DESEL
     PLA 
     RTS 
+
+;----------------------------------
+; return number of 256 bytes pages 
+; available on W25Qxxx
+; ouput:
+;    A:X   value 
+;----------------------------------
+FLASH_CAPACITY:
+    LDA FLASH_SIZE+1
+    LDX FLASH_SIZE 
+    RTS 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; miscelanous functions
@@ -556,6 +563,18 @@ PAUSE:
     BNE @WAIT 
     RTS     
 
+;-------------------------------------
+; generate 1KHZ tone for 1 second 
+;-------------------------------------
+    TONE_1KHZ=1843 ; T1 count for PHI2=3.6864Mhz 
+BELL:
+    LDA #<100
+    STA SND_TMR
+    LDA #>100
+    STA SND_TMR+1
+    LDA #>TONE_1KHZ
+    LDX #<TONE_1KHZ 
+
 ;-----------------------------------
 ; sound a tone 
 ; input:
@@ -563,14 +582,14 @@ PAUSE:
 ;   A:X       timer1 count  
 ;------------------------------------
 TONE:
-; set timer1 to square wave generator mode 
-    LDA #(T1_PB7_SQRWAV<<ACR_T1_MODE)
-    STA VIA_ACR 
-    LDA #F_SOUND
-    TSB FLAGS 
+; set timer 1 coun value  
+    PHA 
+    _TONE_ON 
     STX VIA_T1LL 
-    STX VIA_T1LH 
+    PLA 
+    STA VIA_T1CH  
     RTS 
+
 
 ;---------------------------------------
 ; 16 bits linear feedback shift register 
@@ -673,17 +692,21 @@ PUTC:
 ; send new line character 
 ;------------------------
 NEW_LINE:
+    PHA 
     LDA #CR 
-    BRA PUTC 
- 
+    BRA PRT_PLA 
 
 ;----------------------
 ; PRT_SPC 
 ; print space 
 ;----------------------
 PRT_SPC: 
+    PHA 
     LDA #SPACE 
-    BRA PUTC 
+PRT_PLA: ; restore A after PUTC 
+    JSR PUTC 
+    PLA 
+    RTS 
 
 ;---------------------------------
 ; print string to console 
@@ -881,12 +904,12 @@ PRT_HEX:
 ;     X,Y  function parameters 
 ;--------------------------------
     .SEGMENT "SYSCALL" 
-    .ORG $FD00 
+    .ORG $FC00 
 BIOS_CALL:
-    ASL A
-    PHY 
-    TAY 
-    PLA 
+    PHX 
+    ASL A  
+    TAX  
+    PLA  
     JMP (FNTABLE,X)  
 
 
@@ -898,8 +921,6 @@ FNTABLE:
 ;----------------------------
 ; monitor wozmon style
 ;----------------------------
-    .SEGMENT "MONITOR" 
-    .ORG $FF00 
     .include "p1+Monitor.s"
 
 

@@ -25,15 +25,19 @@
 	STH=FLASH_ADR+2
 	L=BCOUNT
 	H=BCOUNT+1 
-	YSAV=PZ_FREE 
-	MODE=PZ_FREE+1
+	YSAV=ZP_FREE 
+	MODE=ZP_FREE+1
 	
     .SEGMENT "MONITOR" 
-    .ORG $FE00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.0R0",CR,0
+    .ORG $FD00 
+MON_INFO: .BYTE "pomme 1+ monitor version 1.1R0",CR,0
 
 MONITOR:
-	_PUTS MON_INFO 
+	_PUTS MON_INFO
+	STZ XAML 
+	STZ XAMH
+	STZ L 
+	STZ H  
 GETLINE:
 	JSR NEW_LINE
 	LDA #'#'    ; prompt character  
@@ -41,112 +45,93 @@ GETLINE:
 	JSR READLN    ; read line from terminal
 	BEQ GETLINE   ; empty line 
 	LDY  #$FF     ; reset text index 
-	LDA #0        ; default mode = M_XAM 
-	TAX           ; hex digit accumulator = 0 
-SETSTOR:
-	ASL 
+	LDX #0         ; hex digit accumulator = 0 
+	LDA #0 
 SETMODE:           ; set operation MODE 
 	STA MODE       ; 0 = M_XAM
 BLSKIP:
 	INY            ; move Y index to next buffer character 
 NEXTITEM:          ; parse next token 
 	LDA TIB,Y 
+	CMP #SPACE 
+	BEQ BLSKIP
 	JSR UPPER 
-	CMP #CR        ; if carriage return parsing done 
-	BEQ GETLINE    ; accept next input 
+	CMP #CR        ;
+	BNE @N0        ; 
+	LDA MODE 
+	BNE @DISPR
+	LDA XAML 
+	STA L 
+	LDA XAMH 
+	STA H 
+@DISPR:	 
+	JSR DISPLAY_RANGE
+	BRA GETLINE 
+@N0:
 	CMP #'!'       ; check for MODE character 
 	BMI BLSKIP     ;  if char < '!' char invalid, ignore it.
     BNE @T0
-	JSR STORE_PAGE
+	JSR STORE_RANGE
 	BRA GETLINE     
 @T0:  
 	CMP #'.'       ; exam block 
     BEQ SETMODE    ; '.'  set MODE=BLOKXAM 
 	CMP #':'       ;  ':' set MODE=M_STORE  
-    BEQ SETSTOR 
+    BNE @T1
+	JSR MODIFY 
+	BRA GETLINE 
+@T1:	  
     CMP #'X' 
-    BNE @T1    ; erase W25Q080 4KB sector 
+    BNE @T2    ; erase W25Q080 4KB sector 
     JSR ERASE_SECTOR 
     BRA GETLINE 
-@T1:
+@T2:
     CMP #'*'       ; erase W25Q080 chip 
-    BNE @T2 
+    BNE @T3 
     JSR ERASE_ALL 
     BRA GETLINE 
-@T2: 
-    CMP #'R'       ; check for RUN 
-	BNE @T3		   ; run application at XAM address 
-	JMP (XAML)
 @T3: 
+    CMP #'R'       ; check for RUN 
+	BNE @T4		   ; run application at XAM address 
+	JMP (XAML)
+@T4: 
     CMP #'Q'       ; quit monitor 
-    BNE @T4  
+    BNE @T5  
     RTS 
-@T4:
+@T5:
 	CMP #'@'
-	BNE @T5 
-	JSR LOAD_PAGE 
+	BNE @T6 
+	JSR LOAD_RANGE 
 	BRA GETLINE 
-@T5:	
+@T6:	
 	JSR PARSE_HEX  
 	CPY YSAV       ; check there was an HEX number in buffer 
 	BEQ GETLINE    ; if Y as not changed there was not 
-	BIT MODE 
-	BVC NOTSTOR    ; XAM OR XAMBLK  
-	LDA L 		   ; STORE  mode, get byte to store 
-	STA (STL,X)    ; save last address parsed in STL:STH 
-	INC STL        ; increment STL:STH 
-	BNE TONEXTITEM   
-	INC STH        ; STL overflowed then increment STH 
-TONEXTITEM:        ; go to accept next buffer token
-	JMP NEXTITEM
-NOTSTOR:           ; MODE is XAM or BLOKXAM? 
-	LDA MODE       
-	BNE XAMNEXT    ; if Z=0 -> BLOKXAM
-	LDX #2
-SETADR:            ; copy Address from L:H to ST and XAM
-	LDA L-1,X
-	STA STL-1,X
-	STA XAML-1,X 
-	DEX 
-	BNE SETADR      ; 2 bytes to copy
-NXTPRNT:            
-	BNE PRDATA      ; if A==0 then end of line 
-	LDA #CR         ; display 8 data bytes per line 
-	JSR PUTC        ; send carriage return to terminal
-	LDA XAMH        ; print next address at start of next line 
-	JSR PRT_HEX     ; print address high byte 
-	LDA XAML        ; address low byte 
-	JSR PRT_HEX     ; print address low byte 
-	LDA #':'        ; display ':' after address 
-	JSR PUTC  
-PRDATA:             ; print data byte to terminal  
-	LDA #SPACE      ; separate by a blank 
-	JSR PUTC  
-	LDA (XAML,X)    ; get data from memory
-	JSR PRT_HEX     ; print it to terminal.
-XAMNEXT:            ; next data item 
-	STX MODE        ; here X==0, reset MODE to XAM.
-	LDA XAML        ; compare XAM address with L:H address
-	CMP L           ; when equal no more data to display
-	LDA XAMH        ; XAM high byte 
-	SBC H           ; A=A-H-carry 
-	BCS TONEXTITEM  ; XAM<L:H then next item
-	INC XAML        ; increment XAM address
-	BNE MOD8CHK     ; no overflow
-	INC XAMH        ; XAML overflow, increment XAMH 
-MOD8CHK:           
-	LDA XAML        ; load A with low byte of address 
-	AND #15         ; Address modulo 16 (bytes per line)
-	BRA NXTPRNT     ; alway taken 
-	
+	LDA MODE 
+	BNE NEXTITEM 
+	LDA L 
+	STA XAML
+	STA STL  
+	LDA H 
+	STA XAMH 
+	STA STH  
+	BRA NEXTITEM 
 
 ;----------------------------
 ; parse hexadecimal number 
 ;---------------------------
 PARSE_HEX:
-    LDA #0
-	STA L          ; 0 in L:H 
-	STA H 
+	DEY 
+@SKPSPC:
+	INY 
+	LDA TIB,Y 
+	CMP #CR 
+	BEQ @NOTSPC 
+	CMP #SPACE 
+	BEQ @SKPSPC 
+@NOTSPC:
+	STZ L          ; 0 in L:H 
+	STZ H 
 	STY YSAV       ; save Y 
 NEXTHEX:           ; check for HEXADECIMAL digit 
 	LDA TIB,Y
@@ -177,6 +162,134 @@ HEXSHIFT:          ; this digit in L:H variable
 	INY            ; move Y to next char in buffer 
 	BNE NEXTHEX    ; check if another HEX number  
 NOTHEX:            ; Y rollover means buffer overflow 
+	RTS 
+
+;-------------------------
+; store quoted string 
+;--------------------------
+STORE_STRING:
+	INY 
+	LDA TIB,Y 
+	CMP #CR 
+	BEQ @EXIT 
+	CMP #'"' 
+	BEQ @STREND
+	STA (STL)
+	INC STL 
+	BNE STORE_STRING 
+	INC STH 
+	BRA STORE_STRING 
+@STREND:
+	LDA #0
+	STA (STL)
+	INC STL 
+	BNE @N0 
+	INC STH 
+@N0: 	
+	INY 
+@EXIT:
+	RTS 
+
+;--------------------------
+; modify memory starting 
+; at STL 
+;-------------------------
+MODIFY:
+	INY ; skip ':' character 
+@LOOP:	
+	JSR PARSE_HEX 
+	CPY YSAV 
+	BEQ @TRY_QUOTE  
+	LDA L 
+	STA (STL)
+	INC STL 
+	BNE @LOOP 
+	INC STH 
+	BRA @LOOP
+@TRY_QUOTE:
+	LDA TIB,Y 
+	CMP #'"'
+	BNE @EXIT 
+	JSR STORE_STRING 
+	BRA @LOOP	  
+@EXIT: 
+	RTS 
+
+;-------------------------
+; display address 
+; input:
+;   AX  address 
+;-------------------------
+DISPLAY_ADDR:
+	JSR NEW_LINE
+	JSR PRT_HWORD 
+	LDA #':'
+	JSR PUTC 
+	JSR PRT_SPC
+	RTS 
+
+;-----------------------
+; display ASCCII value 
+; at end of each row 
+;-----------------------
+PRT_ASCII:
+	JSR PRT_SPC 
+	LDA #';'
+	JSR PUTC
+	LDY #$FF 
+@SPC:
+	LDA #SPACE   
+@LOOP:
+	JSR PUTC 
+	INY 
+	TYA 
+	CMP #16
+	BEQ @EXIT 
+	LDA PAD,Y 
+	CMP #SPACE
+	BMI @SPC
+	CMP #127 
+	BPL @SPC  
+	BRA @LOOP 
+@EXIT:	  
+	RTS 
+
+;------------------------------
+; display memory content 
+; from XAM..L 
+;------------------------------
+DISPLAY_RANGE:
+	STY YSAV
+@NEW_ROW:
+	LDA XAMH
+	LDX XAML
+	JSR DISPLAY_ADDR 
+	LDY #$FF 
+@LOOP:
+	LDA (XAML)
+	INY 
+	STA PAD,Y 
+	JSR PRT_HEX 
+	JSR PRT_SPC 
+	_INCW XAML
+	LDA L 
+	SEC 
+	CMP XAML  
+	LDA H 
+	SBC XAMH 
+	BMI @EXIT 
+	LDA XAML 
+	AND #15
+	BNE @LOOP
+	JSR PRT_ASCII 
+	BRA @NEW_ROW   
+@EXIT:
+	JSR PRT_ASCII 
+	LDA XAML 
+	STA L 
+	LDA XAMH 
+	STA H 
+	LDY YSAV 
 	RTS 
 
 ;------------------------------
@@ -216,7 +329,7 @@ CONFIRM: .BYTE "CONFIRM FLASH ERASE(Y/N)",CR,0
 ; XAM -> buffer address 
 ; L:H -> W25Q080 page#
 ;-----------------------------
-STORE_PAGE:
+STORE_RANGE:
 	INY 
 	JSR PARSE_HEX 
 	CPY YSAV 
@@ -232,14 +345,15 @@ STORE_PAGE:
 @EXIT:
     RTS 
 
+
 ;------------------------------
-; load page from W25Q080  
+; load range from W25Q080  
 ; from W25Q080 
-; ADR@PG# 
+; ADR1.ADR2'L'PG# 
 ; XAM -> buffer address 
 ; L:H -> W25Q080 page#
 ;-----------------------------
-LOAD_PAGE:
+LOAD_RANGE:
 	INY 
 	JSR PARSE_HEX 
 	CPY YSAV 

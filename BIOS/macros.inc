@@ -74,3 +74,20 @@
       ORA V16 ; to set Z flag if V16==0
    .ENDMACRO 
 
+; enable tone output on VIA 
+   .MACRO _TONE_ON  
+ ;setting timer 1 as square wave generator  
+   LDA #(T1_PB7_SQRWAV<<ACR_T1_MODE)
+   STA VIA_ACR
+   LDA #F_SOUND 
+   TSB FLAGS 
+   .ENDMACRO 
+
+; disable tone output on VIA 
+   .MACRO _TONE_OFF  
+ ;using timer 1 as generator  
+   LDA #(T1_PB7_SQRWAV<<ACR_T1_MODE)
+   TRB VIA_ACR
+   LDA #F_SOUND 
+   TRB FLAGS 
+   .ENDMACRO 

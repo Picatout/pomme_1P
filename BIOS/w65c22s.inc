@@ -69,9 +69,9 @@
     ACR_PB_LATCH=0 ; enable disable latch  on PB 
     ACR_PA_LATCH=1 ; enable disable latcth on PA 
     ACR_SR_MODE=2  ; 3 bits fields 4..2
-    ACR_T2_CTRL=3  ; timer 2 control  
-    ACR_T1_CTRL=4  ; 2 bits field 5..4, timer 1 control 
-    ACR_T1_MODE=6  ; 2 bits field 7..6, timer 1 operating mode 
+    ACR_T2_CTRL=5  ; timer 2 control  
+    ACR_T1_CTRL=6  ; 2 bits field 7..6, timer 1 control 
+    ACR_T1_MODE=6  ; alias for ACR_T1_CTRL 
 
 ; VIA_ACR shift register mode 
     SHIFT_DISABLE=0  ; disable shift register 

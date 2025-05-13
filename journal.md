@@ -3,6 +3,19 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+### 2025-05-12
+
+* Tavail sur le moniteur Version 1.1R0.
+
+### 2025-05-07
+
+* Changement d'organisation du firware BIOS 
+   * création d'une pile des paramètres à l'adresse $C0..$FF 
+   * Utilisation du registre **X** comme pointeur pour la pile des paramètres.
+   * __Tout le code doit-être modifié pour tenir compte de cette modification.__
+   * Ajout du fichier [stack.s](stack.s).
+   * Le BIOS va fonctionné comme une machine FORTH. Le modèle d'exécution sera **direct threaded.**
+
 ### 2025-05-06 
 
 * Travail sur BIOS 
