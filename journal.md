@@ -3,6 +3,12 @@ Copyright Jacques Deschênes, 2025
 Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
+
+### 2025-05-15
+
+* Travail sur le moniteur
+  * Modifié **STORE_RANGE** et **LOAD_RANGE** pour étendre ces opération à une plage de plus de 256 octets.
+
 ### 2025-05-12
 
 * Tavail sur le moniteur Version 1.1R0.

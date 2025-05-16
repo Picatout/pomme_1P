@@ -60,7 +60,7 @@ HEAP_ADR: .res 2 ; address free RAM after program load
 HEAP_FREE: .res 2 ; size free RAM after program load + allocated heap space 
 FLASH_SIZE: .res 2 ; W25Q080|160 last page (256 bytes), i.e. W25Q080 -> $FFFF (0..4095) , W25Q160 -> $FFFF (0..65535)
 FLASH_BUFF: .res 2 ; FLASH memory transaction buffer address
-BCOUNT: .res 2 ; flash memory transaction bytes count 
+BCOUNT: .res 1 ; flash memory transaction bytes count 
 FLASH_ADR: .res 3   ; 24 bits flash memory address  
 RX_HEAD: .res 1  ; ACIA RX queue head pointer 
 RX_TAIL: .res 1  ; ACIA RX queue tail pointer 

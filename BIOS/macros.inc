@@ -91,3 +91,11 @@
    LDA #F_SOUND 
    TRB FLAGS 
    .ENDMACRO 
+
+; move 16 bits variable to another variable
+   .MACRO _MOVW V1, V2 
+   LDA V2 
+   STA V1 
+   LDA V2+1 
+   STA V1+1
+   .ENDMACRO 

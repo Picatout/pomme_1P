@@ -12,22 +12,34 @@
 	M_STORE = ':'    ; $3A<<1=$74 , ADR: BYTE ... store data to memory 
 
 ; other operations:
-;	ADR'R'<CR>  run application at ADR 
+;	ADR'G'<CR>  run application at ADR 
 ;	SECT#'X'<CR>  erase W25Q080 SECTOR# 
 ;	'*'<CR>  erase W25Q080 chip  
-;   ADR'!'PAGE<CR> store 256 memory bytes in W25Q080 flash memory 
-;   ADR'@'PAGE<CR> load 256 bytes from W25Q080 to memory 
+;   ADR'W'PAGE<CR> store 256 memory bytes in W25Q080 flash memory 
+;   ADR'R'PAGE<CR> load 256 bytes from W25Q080 to memory 
 ;   'Q'<CR> quit monitor 
 
+
+    ; examine address 
 	XAML=FLASH_BUFF 
 	XAMH=FLASH_BUFF+1
+	; store address 
 	STL=FLASH_ADR+1
 	STH=FLASH_ADR+2
+	; last parsed number 
 	L=BCOUNT
 	H=BCOUNT+1 
+	; savec Y register 
 	YSAV=ZP_FREE 
-	MODE=ZP_FREE+1
-	
+	; operation mode 
+	MODE=YSAV+1
+	; range size 
+	RANGEL=MODE+1 
+	RANGEH=RANGEL+1 
+	; 16 bits accumulator 
+	ACCL=RANGEH+1 
+	ACCH=ACCL+1  
+
     .SEGMENT "MONITOR" 
     .ORG $FD00 
 MON_INFO: .BYTE "pomme 1+ monitor version 1.1R0",CR,0
@@ -61,15 +73,17 @@ NEXTITEM:          ; parse next token
 	LDA MODE 
 	BNE @DISPR
 	LDA XAML 
+	CLC 
+	ADC #15
 	STA L 
-	LDA XAMH 
+	LDA XAMH
+	ADC #0  
 	STA H 
 @DISPR:	 
 	JSR DISPLAY_RANGE
 	BRA GETLINE 
-@N0:
-	CMP #'!'       ; check for MODE character 
-	BMI BLSKIP     ;  if char < '!' char invalid, ignore it.
+@N0: ; check for write to W25Qxxx
+	CMP #'W'       ; check for MODE character 
     BNE @T0
 	JSR STORE_RANGE
 	BRA GETLINE     
@@ -91,15 +105,15 @@ NEXTITEM:          ; parse next token
     JSR ERASE_ALL 
     BRA GETLINE 
 @T3: 
-    CMP #'R'       ; check for RUN 
+    CMP #'G'       ; check for GOSUB   
 	BNE @T4		   ; run application at XAM address 
-	JMP (XAML)
+	JMP CALL_SUB  
 @T4: 
     CMP #'Q'       ; quit monitor 
     BNE @T5  
     RTS 
-@T5:
-	CMP #'@'
+@T5: ; read W25Qxxx flash
+	CMP #'R'
 	BNE @T6 
 	JSR LOAD_RANGE 
 	BRA GETLINE 
@@ -163,6 +177,22 @@ HEXSHIFT:          ; this digit in L:H variable
 	BNE NEXTHEX    ; check if another HEX number  
 NOTHEX:            ; Y rollover means buffer overflow 
 	RTS 
+
+;------------------------
+; execute a machine code 
+; routine 
+;  ADRH'G'<CR>
+;------------------------
+CALL_SUB:
+	LDA #>GETLINE  
+	LDX #<GETLINE 
+	DEX  
+	BNE @SKIP
+	DEC A 
+@SKIP:
+	PHA 
+	PHX 
+	JMP (XAML)
 
 ;-------------------------
 ; store quoted string 
@@ -324,24 +354,113 @@ ERASE_SECTOR:
 CONFIRM: .BYTE "CONFIRM FLASH ERASE(Y/N)",CR,0
 
 ;-----------------------------
-; store 256 bytes buffer in W25Q080
-; ADR!PG#<CR>
-; XAM -> buffer address 
-; L:H -> W25Q080 page#
-;-----------------------------
-STORE_RANGE:
+; 16 bits substraction  
+; from accumulator ACC
+; AX - ACC 
+; input:
+;    AX    first operand 
+;    ACC   second operand 
+; output:
+;    AX   result 
+;---------------------------
+MINUS_ACC:
+	PHA
+	TXA 
+	SEC 
+	SBC ACCL
+	TAX 
+	PLA 
+	SBC ACCH 
+	RTS 
+
+;--------------------------
+; count of byte in range 
+; XAM.LAST
+; RANGE=L:H+1-XAML:XAMH 
+;-------------------------
+SET_RANGE_SIZE:
+	INC L  
+	BNE @L1 
+	INC H 
+@L1:
+	_MOVW ACCL, XAML
+	LDA H 
+	LDA L 
+	JSR MINUS_ACC 
+	STA RANGEH 
+	STX RANGEL 
+	RTS 
+
+;------------------------------
+;expect page number in 
+; TIB 
+; put it in FLASH_ADR variable 
+; output:
+;   LH    flash page 
+;------------------------------
+PARSE_FLASH_PAGE:
+	STZ FLASH_ADR ; low byte always zero  
 	INY 
 	JSR PARSE_HEX 
 	CPY YSAV 
+	RTS 
+
+;---------------------------
+; set bytes count 
+; for flash r/w 
+;--------------------------
+SET_COUNT:
+; save byte count in ACC 
+	STZ ACCH 
+	LDA RANGEH  
+	BNE @GE256 ; >=256	
+	LDA RANGEL
+	PHP 
 	BEQ @EXIT 
-; FLASH_ADR=L:H*256
-	LDA L 
-	STA FLASH_ADR+1 
-	LDA H 
-	STA FLASH_ADR+2 
-	LDA #0 
-	STA FLASH_ADR 
-	JSR FLASH_WRITE	
+@GE256:
+	INC ACCH 
+	LDA #0
+@EXIT: 
+	STA ACCL  
+	PLP 
+	RTS 
+
+;-------------------------
+; increment flash page#
+; decrement range_left 
+;-------------------------
+UPDATE_PARAMS:
+; increment flash page number 
+	INC FLASH_ADR+1
+	BNE @DEC_COUNT 
+	INC FLASH_ADR+2 
+@DEC_COUNT: ; how many left 
+	LDA RANGEH 
+	LDX RANGEL 
+	JSR MINUS_ACC ; bytes stored in ACC 
+	STA RANGEH    ; what is left to store 
+	STX RANGEL   
+	RTS 
+
+;-----------------------------
+; store memory range to W25Qxxx
+; ADR1.ADR2WPG#<CR>
+; XAM -> buffer address 
+; L:H -> W25QXXX page#
+;-----------------------------
+STORE_RANGE:
+; set count to store in RANGE variable 
+	JSR SET_RANGE_SIZE  
+; get flash page number 
+	JSR PARSE_FLASH_PAGE 
+	BEQ @EXIT  ; syntax error 
+	_MOVW FLASH_ADR+1, L 
+@LOOP:  
+	JSR SET_COUNT
+	BEQ @EXIT  
+	JSR FLASH_WRITE ; A=count to store 
+	JSR UPDATE_PARAMS
+	BRA @LOOP 
 @EXIT:
     RTS 
 
@@ -354,18 +473,17 @@ STORE_RANGE:
 ; L:H -> W25Q080 page#
 ;-----------------------------
 LOAD_RANGE:
-	INY 
-	JSR PARSE_HEX 
-	CPY YSAV 
-	BEQ @EXIT 
-; FLASH_ADR=L:H*256
-	LDA L 
-	STA FLASH_ADR+1 
-	LDA H 
-	STA FLASH_ADR+2 
-	LDA #0 
-	STA FLASH_ADR 
-	JSR FLASH_READ	
+; set count to load in RANGE variable 
+	JSR SET_RANGE_SIZE
+; get flash page address 
+	JSR PARSE_FLASH_PAGE 
+	BEQ @EXIT
+	_MOVW FLASH_ADR+1, L 
+@LOOP:  
+	JSR SET_COUNT 
+	JSR FLASH_READ
+	JSR UPDATE_PARAMS
+	BRA @LOOP 
 @EXIT: 
     RTS 
 
