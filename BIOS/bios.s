@@ -904,7 +904,7 @@ PRT_HEX:
 ;     X,Y  function parameters 
 ;--------------------------------
     .SEGMENT "SYSCALL" 
-    .ORG $FC00 
+    .ORG $FB00 
 BIOS_CALL:
     PHX 
     ASL A  

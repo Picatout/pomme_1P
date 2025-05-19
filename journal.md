@@ -4,6 +4,15 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-05-19 
+
+* Test mise à jour p1+Monitor.s 
+
+* Ajout de fonctions à p1+Monitor.s 
+  * range'M'dest   copie la plage mémoire *range* vers *dest*. 
+  * range'V'dest   compare la page mémoire *range* à la plage débutant à *dest* et affiche les différences.
+  * range'Z'   met à zéro la plage *range*.
+
 ### 2025-05-15
 
 * Travail sur le moniteur

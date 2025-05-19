@@ -21,16 +21,16 @@
 
 
     ; examine address 
-	XAML=FLASH_BUFF 
-	XAMH=FLASH_BUFF+1
+	XAML=ZP_FREE 
+	XAMH=XAML+1
 	; store address 
-	STL=FLASH_ADR+1
-	STH=FLASH_ADR+2
+	STL=XAMH+1
+	STH=STL+1
 	; last parsed number 
-	L=BCOUNT
-	H=BCOUNT+1 
+	L=STH+1
+	H=L+1 
 	; savec Y register 
-	YSAV=ZP_FREE 
+	YSAV=H+1 
 	; operation mode 
 	MODE=YSAV+1
 	; range size 
@@ -41,8 +41,8 @@
 	ACCH=ACCL+1  
 
     .SEGMENT "MONITOR" 
-    .ORG $FD00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.1R0",CR,0
+    .ORG $FC00 
+MON_INFO: .BYTE "pomme 1+ monitor version 1.2R0",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
@@ -116,20 +116,39 @@ NEXTITEM:          ; parse next token
 	CMP #'R'
 	BNE @T6 
 	JSR LOAD_RANGE 
-	BRA GETLINE 
-@T6:	
+	JMP GETLINE 
+@T6: ; zero fill range 
+	CMP #'Z'
+	BNE @T7 
+	JSR ZERO_FILL
+@JP6:
+	JMP GETLINE
+@T7:
+	CMP #'M' 
+	BNE @T8 
+	JSR MOVE 
+	JMP GETLINE
+@T8:
+	CMP #'V' 
+	BNE @T9 
+	JSR VERIFY
+	JMP GETLINE 
+@T9:	
 	JSR PARSE_HEX  
 	CPY YSAV       ; check there was an HEX number in buffer 
-	BEQ GETLINE    ; if Y as not changed there was not 
+	BEQ @JP6    ; if Y as not changed there was not 
 	LDA MODE 
-	BNE NEXTITEM 
+	BEQ @T11 
+	JMP NEXTITEM 
+@T11: 
 	LDA L 
 	STA XAML
 	STA STL  
 	LDA H 
 	STA XAMH 
-	STA STH  
-	BRA NEXTITEM 
+	STA STH 
+@T12:	 
+	JMP NEXTITEM 
 
 ;----------------------------
 ; parse hexadecimal number 
@@ -303,7 +322,6 @@ DISPLAY_RANGE:
 	JSR PRT_SPC 
 	_INCW XAML
 	LDA L 
-	SEC 
 	CMP XAML  
 	LDA H 
 	SBC XAMH 
@@ -385,7 +403,7 @@ SET_RANGE_SIZE:
 @L1:
 	_MOVW ACCL, XAML
 	LDA H 
-	LDA L 
+	LDX L 
 	JSR MINUS_ACC 
 	STA RANGEH 
 	STX RANGEL 
@@ -444,50 +462,153 @@ UPDATE_PARAMS:
 
 ;-----------------------------
 ; store memory range to W25Qxxx
-; ADR1.ADR2WPG#<CR>
+; ADR1'W'PG#<CR>
 ; XAM -> buffer address 
 ; L:H -> W25QXXX page#
 ;-----------------------------
 STORE_RANGE:
-; set count to store in RANGE variable 
-	JSR SET_RANGE_SIZE  
-; get flash page number 
-	JSR PARSE_FLASH_PAGE 
-	BEQ @EXIT  ; syntax error 
-	_MOVW FLASH_ADR+1, L 
-@LOOP:  
-	JSR SET_COUNT
-	BEQ @EXIT  
-	JSR FLASH_WRITE ; A=count to store 
-	JSR UPDATE_PARAMS
-	BRA @LOOP 
-@EXIT:
-    RTS 
-
+; copy XAM to FLASH_BUFF 
+   _MOVW FLASH_BUFF, XAML 
+   STZ FLASH_ADR
+   INY   
+   JSR PARSE_HEX
+   BEQ @EXIT 
+   _MOVW FLASH_ADR+1,L
+   LDA #0 
+   JSR FLASH_WRITE  
+@EXIT:  
+   RTS 
 
 ;------------------------------
 ; load range from W25Q080  
 ; from W25Q080 
-; ADR1.ADR2'L'PG# 
+; ADR1'R'PG# 
 ; XAM -> buffer address 
 ; L:H -> W25Q080 page#
 ;-----------------------------
 LOAD_RANGE:
-; set count to load in RANGE variable 
-	JSR SET_RANGE_SIZE
-; get flash page address 
-	JSR PARSE_FLASH_PAGE 
+; copy XAM to FLASH_BUFF 
+   _MOVW FLASH_BUFF, XAML 
+   STZ FLASH_ADR 
+   INY 
+   JSR PARSE_HEX
+   BEQ @EXIT
+   _MOVW FLASH_ADR+1,L
+   LDA #0 
+   JSR FLASH_READ 
+@EXIT:
+   RTS 
+
+
+;-------------------
+; zero fill range 
+; ADR1.ADR2'Z' 
+;------------------
+ZERO_FILL:
+	LDX #0
+@L00:	 
+	TXA 
+	STA (XAML,x)
+	INC XAML 
+	BNE @L01
+	INC XAMH 
+@L01:
+	LDA L
+	CMP XAML   
+	LDA H 
+	SBC XAMH 
+	BPL @L00  
+	RTS 
+
+
+;------------------------
+; get 3th parameter 
+; for 'M' and 'V' command 
+;------------------------
+GET_TARGET:
+	LDA L 
+	STA RANGEL 
+	LDA H 
+	STA RANGEH 
+	INY 
+	JSR PARSE_HEX 
 	BEQ @EXIT
-	_MOVW FLASH_ADR+1, L 
-@LOOP:  
-	JSR SET_COUNT 
-	JSR FLASH_READ
-	JSR UPDATE_PARAMS
-	BRA @LOOP 
-@EXIT: 
-    RTS 
+	LDA L 
+	STA STL 
+	LDA H 
+	STA STH  
+@EXIT:  
+	RTS 
 
-
+;--------------------
+; move range to ADR3  
+; ADR1'.'ADR2'M'ADR3
+;--------------------  
+MOVE:
+	JSR GET_TARGET
+	BEQ @EXIT 
+@LOOP:
+	LDA (XAML)
+	STA (STL)
+	INC XAML 
+	BNE @INCR_ST 
+    INC XAMH
+@INCR_ST:
+	INC STL 
+	BNE @CHECK_LIMIT 
+	INC STH 	 
+@CHECK_LIMIT:
+	LDA RANGEL  
+	CMP XAML 
+	LDA RANGEH 
+	SBC XAMH 
+	BPL @LOOP
+@EXIT:
+	RTS 
 	
-	
-	
+;-----------------------
+; COMPARE 2 ranges 
+; display difference 
+; ADR1'.'ADR2'V'ADR3
+;-----------------------
+VERIFY:
+	JSR GET_TARGET
+	BEQ @EXIT 
+@LOOP:
+	LDA (XAML)
+	CMP (STL)
+	BNE @DIFF 
+@NEXT:
+	INC XAML 
+	BNE @INCR_ST 
+	INC XAMH 
+@INCR_ST:
+	INC STL 
+	BNE @CHECK_LIMIT 
+	INC STH 
+@CHECK_LIMIT:
+	LDA RANGEL 
+	CMP XAML
+	LDA RANGEH 
+	SBC XAMH  
+	BPL @LOOP
+	BRA @EXIT 
+@DIFF:
+	LDA XAMH 
+	LDX XAML 
+	JSR PRT_HWORD
+	JSR PRT_SPC
+	LDA (XAML)
+	JSR PRT_HEX 
+	JSR PRT_SPC
+	JSR PRT_SPC
+	LDA STH 
+	LDX STL  
+	JSR PRT_HWORD
+	JSR PRT_SPC   
+	LDA (STL)
+	JSR PRT_HEX 
+	JSR NEW_LINE
+	BRA @NEXT 
+@EXIT:
+	RTS 
