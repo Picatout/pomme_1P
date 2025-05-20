@@ -13,6 +13,9 @@ https://github.com/picatout/pomme-1P
   * range'V'dest   compare la page mémoire *range* à la plage débutant à *dest* et affiche les différences.
   * range'Z'   met à zéro la plage *range*.
 
+* Création du manuel du [p1+Monitor](docs/p1+Monitor.pdf).
+
+
 ### 2025-05-15
 
 * Travail sur le moniteur

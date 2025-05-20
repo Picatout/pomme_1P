@@ -23,8 +23,10 @@
     ; examine address 
 	XAML=ZP_FREE 
 	XAMH=XAML+1
+	LIML=XAMH+1
+	LIMH=LIML+1
 	; store address 
-	STL=XAMH+1
+	STL=LIMH+1
 	STH=STL+1
 	; last parsed number 
 	L=STH+1
@@ -33,23 +35,20 @@
 	YSAV=H+1 
 	; operation mode 
 	MODE=YSAV+1
-	; range size 
-	RANGEL=MODE+1 
-	RANGEH=RANGEL+1 
 	; 16 bits accumulator 
-	ACCL=RANGEH+1 
+	ACCL=MODE+1 
 	ACCH=ACCL+1  
 
     .SEGMENT "MONITOR" 
     .ORG $FC00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.2R0",CR,0
+MON_INFO: .BYTE "pomme 1+ monitor version 1.2R1",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
 	STZ XAML 
 	STZ XAMH
-	STZ L 
-	STZ H  
+	STZ LIML 
+	STZ LIMH  
 GETLINE:
 	JSR NEW_LINE
 	LDA #'#'    ; prompt character  
@@ -57,7 +56,7 @@ GETLINE:
 	JSR READLN    ; read line from terminal
 	BEQ GETLINE   ; empty line 
 	LDY  #$FF     ; reset text index 
-	LDX #0         ; hex digit accumulator = 0 
+;	LDX #0         ; hex digit accumulator = 0 
 	LDA #0 
 SETMODE:           ; set operation MODE 
 	STA MODE       ; 0 = M_XAM
@@ -71,39 +70,39 @@ NEXTITEM:          ; parse next token
 	CMP #CR        ;
 	BNE @N0        ; 
 	LDA MODE 
-	BNE @DISPR
+	BEQ @DISP16B
+	JMP MODE_SELECT 
+@DISP16B:	 
 	LDA XAML 
 	CLC 
 	ADC #15
-	STA L 
+	STA LIML  
 	LDA XAMH
 	ADC #0  
-	STA H 
+	STA LIMH 
 @DISPR:	 
 	JSR DISPLAY_RANGE
 	BRA GETLINE 
 @N0: ; check for write to W25Qxxx
-	CMP #'W'       ; check for MODE character 
-    BNE @T0
-	JSR STORE_RANGE
-	BRA GETLINE     
-@T0:  
-	CMP #'.'       ; exam block 
-    BEQ SETMODE    ; '.'  set MODE=BLOKXAM 
 	CMP #':'       ;  ':' set MODE=M_STORE  
-    BNE @T1
+    BNE @T0
 	JSR MODIFY 
 	BRA GETLINE 
-@T1:	  
-    CMP #'X' 
-    BNE @T2    ; erase W25Q080 4KB sector 
-    JSR ERASE_SECTOR 
-    BRA GETLINE 
-@T2:
+@T0:
     CMP #'*'       ; erase W25Q080 chip 
-    BNE @T3 
-    JSR ERASE_ALL 
-    BRA GETLINE 
+    BNE @T1 
+    JSR ERASE_CHIP 
+	BRA GETLINE  
+@T1: 
+	CMP #'X' 
+	BNE @T2 
+	JSR ERASE_SECTOR 
+	BRA GETLINE 
+@T2:	
+	CMP #'Z' 
+	BNE @T3
+	JSR ZERO_FILL
+	BRA GETLINE  
 @T3: 
     CMP #'G'       ; check for GOSUB   
 	BNE @T4		   ; run application at XAM address 
@@ -112,43 +111,66 @@ NEXTITEM:          ; parse next token
     CMP #'Q'       ; quit monitor 
     BNE @T5  
     RTS 
-@T5: ; read W25Qxxx flash
-	CMP #'R'
-	BNE @T6 
-	JSR LOAD_RANGE 
-	JMP GETLINE 
-@T6: ; zero fill range 
-	CMP #'Z'
-	BNE @T7 
-	JSR ZERO_FILL
-@JP6:
-	JMP GETLINE
-@T7:
+@T5:  
+	CMP #'.'       ; exam block 
+    BEQ SETMODE    ; '.'  set MODE=BLOKXAM 
+	CMP #'W'       ; check for MODE character 
+    BEQ SETMODE 
+	CMP #'R' 
+	BEQ SETMODE 
 	CMP #'M' 
-	BNE @T8 
-	JSR MOVE 
-	JMP GETLINE
-@T8:
+	BEQ SETMODE 
 	CMP #'V' 
-	BNE @T9 
-	JSR VERIFY
-	JMP GETLINE 
+	BEQ SETMODE 
 @T9:	
 	JSR PARSE_HEX  
 	CPY YSAV       ; check there was an HEX number in buffer 
-	BEQ @JP6    ; if Y as not changed there was not 
+	BNE @T10
+	JMP GETLINE    ; if Y as not changed there was not 
+@T10: 
 	LDA MODE 
 	BEQ @T11 
-	JMP NEXTITEM 
+	CMP #'.' 
+	BEQ @T12
+	LDA L 
+	STA STL 
+	LDA H 
+	STA STH  
+	BRA MODE_SELECT  
 @T11: 
 	LDA L 
 	STA XAML
-	STA STL  
+	STA STL
 	LDA H 
 	STA XAMH 
-	STA STH 
-@T12:	 
+	STA STH
 	JMP NEXTITEM 
+@T12:
+	LDA L 
+	STA LIML 
+	LDA H 
+	STA LIMH 	 
+	JMP NEXTITEM 
+MODE_SELECT:
+	LDY #5
+@MLOOP:
+	DEY  
+	BMI @EXIT
+	LDA MODE_TABLE,Y
+	CMP MODE
+	BNE @MLOOP 
+	JSR EXEC
+@EXIT: 	
+	JMP GETLINE 
+EXEC:	 
+	TYA 
+	ASL 
+	TAX
+	JMP (CALL_TABLE,X)
+
+MODE_TABLE: .byte 'W','R','M','V','.'
+CALL_TABLE: .word STORE_RANGE,LOAD_RANGE,MOVE,VERIFY,DISPLAY_RANGE 
+
 
 ;----------------------------
 ; parse hexadecimal number 
@@ -200,9 +222,10 @@ NOTHEX:            ; Y rollover means buffer overflow
 ;------------------------
 ; execute a machine code 
 ; routine 
-;  ADRH'G'<CR>
+;  XAM'G'<CR>
 ;------------------------
 CALL_SUB:
+; set return address to GETLINE 
 	LDA #>GETLINE  
 	LDX #<GETLINE 
 	DEX  
@@ -241,7 +264,7 @@ STORE_STRING:
 
 ;--------------------------
 ; modify memory starting 
-; at STL 
+; ST: byte||"string" ... 
 ;-------------------------
 MODIFY:
 	INY ; skip ':' character 
@@ -305,7 +328,7 @@ PRT_ASCII:
 
 ;------------------------------
 ; display memory content 
-; from XAM..L 
+; XAM.LIM 
 ;------------------------------
 DISPLAY_RANGE:
 	STY YSAV
@@ -321,9 +344,9 @@ DISPLAY_RANGE:
 	JSR PRT_HEX 
 	JSR PRT_SPC 
 	_INCW XAML
-	LDA L 
+	LDA LIML 
 	CMP XAML  
-	LDA H 
+	LDA LIMH 
 	SBC XAMH 
 	BMI @EXIT 
 	LDA XAML 
@@ -333,18 +356,40 @@ DISPLAY_RANGE:
 	BRA @NEW_ROW   
 @EXIT:
 	JSR PRT_ASCII 
+.IF 0
 	LDA XAML 
-	STA L 
+	STA LIML   
 	LDA XAMH 
-	STA H 
+	STA LIMH 
+.ENDIF 
 	LDY YSAV 
 	RTS 
+
+;---------------------
+; '*' erase all W25128 
+;-----------------------
+ERASE_CHIP:
+	INY 
+	_PUTS WARNING
+	JSR GETC 
+	JSR UPPER 
+	CMP #'Y'
+	BNE @EXIT  
+	_PUTS WAIT40S
+	JMP ERASE_ALL 
+@EXIT: 	
+	RTS 
+
+WARNING: .byte "THIS WILL ERASE WHOLE SSD, (Y/N)?",CR,0
+WAIT40S: .byte "Be patient it take 40+ seconds",CR,0 
+
 
 ;------------------------------
 ; erase W25Q080 4KB sector 
 ; SECTOR#'X'<CR>
 ;------------------------------
 ERASE_SECTOR:
+	INY 
 	_PUTS CONFIRM 
 	JSR GETC 
 	JSR UPPER 
@@ -354,13 +399,13 @@ ERASE_SECTOR:
 	LDX #4
 @LOOP:
 	CLC 
-	ROL L 
-	ROL H
-	DEC 
+	ROL XAML  
+	ROL XAMH 
+	DEX 
 	BNE @LOOP 
-	LDA L 
+	LDA XAML  
 	STA FLASH_ADR+1 
-	LDA H 
+	LDA XAMH 
 	STA FLASH_ADR+2
 	LDA #0 
 	STA FLASH_ADR
@@ -371,6 +416,7 @@ ERASE_SECTOR:
 
 CONFIRM: .BYTE "CONFIRM FLASH ERASE(Y/N)",CR,0
 
+.IF 0
 ;-----------------------------
 ; 16 bits substraction  
 ; from accumulator ACC
@@ -394,7 +440,7 @@ MINUS_ACC:
 ;--------------------------
 ; count of byte in range 
 ; XAM.LAST
-; RANGE=L:H+1-XAML:XAMH 
+; =L:H+1-XAML:XAMH 
 ;-------------------------
 SET_RANGE_SIZE:
 	INC L  
@@ -405,8 +451,8 @@ SET_RANGE_SIZE:
 	LDA H 
 	LDX L 
 	JSR MINUS_ACC 
-	STA RANGEH 
-	STX RANGEL 
+	STA LIMH 
+	STX LIML 
 	RTS 
 
 ;------------------------------
@@ -430,9 +476,9 @@ PARSE_FLASH_PAGE:
 SET_COUNT:
 ; save byte count in ACC 
 	STZ ACCH 
-	LDA RANGEH  
+	LDA LIMH  
 	BNE @GE256 ; >=256	
-	LDA RANGEL
+	LDA LIML
 	PHP 
 	BEQ @EXIT 
 @GE256:
@@ -453,30 +499,27 @@ UPDATE_PARAMS:
 	BNE @DEC_COUNT 
 	INC FLASH_ADR+2 
 @DEC_COUNT: ; how many left 
-	LDA RANGEH 
-	LDX RANGEL 
+	LDA LIMH 
+	LDX LIML 
 	JSR MINUS_ACC ; bytes stored in ACC 
-	STA RANGEH    ; what is left to store 
-	STX RANGEL   
+	STA LIMH    ; what is left to store 
+	STX LIML   
 	RTS 
+.ENDIF 
 
 ;-----------------------------
 ; store memory range to W25Qxxx
 ; ADR1'W'PG#<CR>
 ; XAM -> buffer address 
-; L:H -> W25QXXX page#
+; ST -> W25QXXX page#
 ;-----------------------------
 STORE_RANGE:
 ; copy XAM to FLASH_BUFF 
    _MOVW FLASH_BUFF, XAML 
    STZ FLASH_ADR
-   INY   
-   JSR PARSE_HEX
-   BEQ @EXIT 
-   _MOVW FLASH_ADR+1,L
+   _MOVW FLASH_ADR+1,STL
    LDA #0 
    JSR FLASH_WRITE  
-@EXIT:  
    RTS 
 
 ;------------------------------
@@ -484,7 +527,7 @@ STORE_RANGE:
 ; from W25Q080 
 ; ADR1'R'PG# 
 ; XAM -> buffer address 
-; L:H -> W25Q080 page#
+; ST -> W25Q080 page#
 ;-----------------------------
 LOAD_RANGE:
 ; copy XAM to FLASH_BUFF 
@@ -493,7 +536,7 @@ LOAD_RANGE:
    INY 
    JSR PARSE_HEX
    BEQ @EXIT
-   _MOVW FLASH_ADR+1,L
+   _MOVW FLASH_ADR+1,STL
    LDA #0 
    JSR FLASH_READ 
 @EXIT:
@@ -502,51 +545,28 @@ LOAD_RANGE:
 
 ;-------------------
 ; zero fill range 
-; ADR1.ADR2'Z' 
+; XAM.LIM'Z' 
 ;------------------
 ZERO_FILL:
-	LDX #0
 @L00:	 
-	TXA 
-	STA (XAML,x)
-	INC XAML 
+	LDA #0
+	STA (STL,x)
+	INC STL 
 	BNE @L01
-	INC XAMH 
+	INC STH 
 @L01:
-	LDA L
-	CMP XAML   
-	LDA H 
-	SBC XAMH 
+	LDA LIML 
+	CMP STL   
+	LDA LIMH 
+	SBC STH 
 	BPL @L00  
-	RTS 
-
-
-;------------------------
-; get 3th parameter 
-; for 'M' and 'V' command 
-;------------------------
-GET_TARGET:
-	LDA L 
-	STA RANGEL 
-	LDA H 
-	STA RANGEH 
-	INY 
-	JSR PARSE_HEX 
-	BEQ @EXIT
-	LDA L 
-	STA STL 
-	LDA H 
-	STA STH  
-@EXIT:  
 	RTS 
 
 ;--------------------
 ; move range to ADR3  
-; ADR1'.'ADR2'M'ADR3
+; XAM'.'LIM'M'ST 
 ;--------------------  
 MOVE:
-	JSR GET_TARGET
-	BEQ @EXIT 
 @LOOP:
 	LDA (XAML)
 	STA (STL)
@@ -558,9 +578,9 @@ MOVE:
 	BNE @CHECK_LIMIT 
 	INC STH 	 
 @CHECK_LIMIT:
-	LDA RANGEL  
+	LDA LIML  
 	CMP XAML 
-	LDA RANGEH 
+	LDA LIMH 
 	SBC XAMH 
 	BPL @LOOP
 @EXIT:
@@ -569,11 +589,9 @@ MOVE:
 ;-----------------------
 ; COMPARE 2 ranges 
 ; display difference 
-; ADR1'.'ADR2'V'ADR3
+; XAM'.'LIM'V'ST
 ;-----------------------
 VERIFY:
-	JSR GET_TARGET
-	BEQ @EXIT 
 @LOOP:
 	LDA (XAML)
 	CMP (STL)
@@ -587,9 +605,9 @@ VERIFY:
 	BNE @CHECK_LIMIT 
 	INC STH 
 @CHECK_LIMIT:
-	LDA RANGEL 
+	LDA LIML 
 	CMP XAML
-	LDA RANGEH 
+	LDA LIMH 
 	SBC XAMH  
 	BPL @LOOP
 	BRA @EXIT 
@@ -612,3 +630,4 @@ VERIFY:
 	BRA @NEXT 
 @EXIT:
 	RTS 
+
