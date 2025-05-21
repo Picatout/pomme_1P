@@ -4,6 +4,11 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-05-20 
+
+* Paufiner le code du Moniteur. 
+* Ajout au manuel [p1+Monitor.pdf](docs/p1+Monitor.pdf).
+
 ### 2025-05-19 
 
 * Test mise à jour p1+Monitor.s 
