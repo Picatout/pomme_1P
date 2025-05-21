@@ -41,7 +41,7 @@
 
     .SEGMENT "MONITOR" 
     .ORG $FC00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.2R1",CR,0
+MON_INFO: .BYTE "pomme 1+ monitor version 1.2R2",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
@@ -56,7 +56,6 @@ GETLINE:
 	JSR READLN    ; read line from terminal
 	BEQ GETLINE   ; empty line 
 	LDY  #$FF     ; reset text index 
-;	LDX #0         ; hex digit accumulator = 0 
 	LDA #0 
 SETMODE:           ; set operation MODE 
 	STA MODE       ; 0 = M_XAM
@@ -67,76 +66,44 @@ NEXTITEM:          ; parse next token
 	CMP #SPACE 
 	BEQ BLSKIP
 	JSR UPPER 
-	CMP #CR        ;
-	BNE @N0        ; 
+	CMP #CR        
+	BNE VALID_CMD      
 	LDA MODE 
-	BEQ @DISP16B
-	JMP MODE_SELECT 
-@DISP16B:	 
-	LDA XAML 
-	CLC 
-	ADC #15
-	STA LIML  
-	LDA XAMH
-	ADC #0  
-	STA LIMH 
-@DISPR:	 
-	JSR DISPLAY_RANGE
+	BNE CMD_EXEC 
+	JSR DISP16B
 	BRA GETLINE 
-@N0: ; check for write to W25Qxxx
-	CMP #':'       ;  ':' set MODE=M_STORE  
-    BNE @T0
+VALID_CMD: ; check if character is in command list 
+	CMP #':' 
+	BNE @T0 
 	JSR MODIFY 
 	BRA GETLINE 
 @T0:
-    CMP #'*'       ; erase W25Q080 chip 
-    BNE @T1 
-    JSR ERASE_CHIP 
-	BRA GETLINE  
-@T1: 
-	CMP #'X' 
-	BNE @T2 
-	JSR ERASE_SECTOR 
-	BRA GETLINE 
-@T2:	
-	CMP #'Z' 
-	BNE @T3
-	JSR ZERO_FILL
-	BRA GETLINE  
-@T3: 
-    CMP #'G'       ; check for GOSUB   
-	BNE @T4		   ; run application at XAM address 
-	JMP CALL_SUB  
-@T4: 
-    CMP #'Q'       ; quit monitor 
-    BNE @T5  
-    RTS 
-@T5:  
-	CMP #'.'       ; exam block 
-    BEQ SETMODE    ; '.'  set MODE=BLOKXAM 
-	CMP #'W'       ; check for MODE character 
-    BEQ SETMODE 
-	CMP #'R' 
-	BEQ SETMODE 
-	CMP #'M' 
-	BEQ SETMODE 
-	CMP #'V' 
-	BEQ SETMODE 
-@T9:	
+	STA ACCL 
+	LDX #10
+@LOOP:
+	DEX 
+	BMI @TRY_HEX
+	LDA CMD_TABLE,X 	
+	CMP ACCL 
+	BNE @LOOP 
+	TXA 
+	STA MODE 
+	BRA BLSKIP
+@TRY_HEX:	
 	JSR PARSE_HEX  
 	CPY YSAV       ; check there was an HEX number in buffer 
 	BNE @T10
-	JMP GETLINE    ; if Y as not changed there was not 
+	BRA GETLINE    ; if Y as not changed there was not 
 @T10: 
 	LDA MODE 
 	BEQ @T11 
-	CMP #'.' 
+	CMP #9
 	BEQ @T12
 	LDA L 
 	STA STL 
 	LDA H 
 	STA STH  
-	BRA MODE_SELECT  
+	BRA NEXTITEM
 @T11: 
 	LDA L 
 	STA XAML
@@ -151,25 +118,24 @@ NEXTITEM:          ; parse next token
 	LDA H 
 	STA LIMH 	 
 	JMP NEXTITEM 
-MODE_SELECT:
-	LDY #5
-@MLOOP:
-	DEY  
-	BMI @EXIT
-	LDA MODE_TABLE,Y
-	CMP MODE
-	BNE @MLOOP 
-	JSR EXEC
-@EXIT: 	
-	JMP GETLINE 
-EXEC:	 
-	TYA 
-	ASL 
+CMD_EXEC:
+; set return address to GETLINE 
+	LDA #>GETLINE  
+	LDX #<GETLINE 
+	DEX  
+	BNE @SKIP
+	DEC A 
+@SKIP:
+	PHA 
+	PHX 
+	LDA MODE 
+	ASL 	 
 	TAX
 	JMP (CALL_TABLE,X)
 
-MODE_TABLE: .byte 'W','R','M','V','.'
-CALL_TABLE: .word STORE_RANGE,LOAD_RANGE,MOVE,VERIFY,DISPLAY_RANGE 
+
+CMD_TABLE: .byte 0,'Z','X','*','W','R','M','V','G','.'
+CALL_TABLE: .word 0,ZERO_FILL,ERASE_SECTOR,ERASE_CHIP,STORE_RANGE,LOAD_RANGE,MOVE,VERIFY,RUN,DISPLAY_RANGE 
 
 
 ;----------------------------
@@ -219,21 +185,14 @@ HEXSHIFT:          ; this digit in L:H variable
 NOTHEX:            ; Y rollover means buffer overflow 
 	RTS 
 
+
 ;------------------------
 ; execute a machine code 
-; routine 
+; routine, the routine 
+; must terminate by RTS  
 ;  XAM'G'<CR>
 ;------------------------
-CALL_SUB:
-; set return address to GETLINE 
-	LDA #>GETLINE  
-	LDX #<GETLINE 
-	DEX  
-	BNE @SKIP
-	DEC A 
-@SKIP:
-	PHA 
-	PHX 
+RUN:
 	JMP (XAML)
 
 ;-------------------------
@@ -267,7 +226,7 @@ STORE_STRING:
 ; ST: byte||"string" ... 
 ;-------------------------
 MODIFY:
-	INY ; skip ':' character 
+	INY ; skip CR character 
 @LOOP:	
 	JSR PARSE_HEX 
 	CPY YSAV 
@@ -326,12 +285,24 @@ PRT_ASCII:
 @EXIT:	  
 	RTS 
 
+;------------------------
+; display next 16 bytes 
+; from XAM 
+;-----------------------
+DISP16B:	 
+	LDA XAML 
+	CLC 
+	ADC #15
+	STA LIML  
+	LDA XAMH
+	ADC #0  
+	STA LIMH 
+
 ;------------------------------
 ; display memory content 
 ; XAM.LIM 
 ;------------------------------
 DISPLAY_RANGE:
-	STY YSAV
 @NEW_ROW:
 	LDA XAMH
 	LDX XAML
@@ -356,13 +327,6 @@ DISPLAY_RANGE:
 	BRA @NEW_ROW   
 @EXIT:
 	JSR PRT_ASCII 
-.IF 0
-	LDA XAML 
-	STA LIML   
-	LDA XAMH 
-	STA LIMH 
-.ENDIF 
-	LDY YSAV 
 	RTS 
 
 ;---------------------
@@ -416,97 +380,6 @@ ERASE_SECTOR:
 
 CONFIRM: .BYTE "CONFIRM FLASH ERASE(Y/N)",CR,0
 
-.IF 0
-;-----------------------------
-; 16 bits substraction  
-; from accumulator ACC
-; AX - ACC 
-; input:
-;    AX    first operand 
-;    ACC   second operand 
-; output:
-;    AX   result 
-;---------------------------
-MINUS_ACC:
-	PHA
-	TXA 
-	SEC 
-	SBC ACCL
-	TAX 
-	PLA 
-	SBC ACCH 
-	RTS 
-
-;--------------------------
-; count of byte in range 
-; XAM.LAST
-; =L:H+1-XAML:XAMH 
-;-------------------------
-SET_RANGE_SIZE:
-	INC L  
-	BNE @L1 
-	INC H 
-@L1:
-	_MOVW ACCL, XAML
-	LDA H 
-	LDX L 
-	JSR MINUS_ACC 
-	STA LIMH 
-	STX LIML 
-	RTS 
-
-;------------------------------
-;expect page number in 
-; TIB 
-; put it in FLASH_ADR variable 
-; output:
-;   LH    flash page 
-;------------------------------
-PARSE_FLASH_PAGE:
-	STZ FLASH_ADR ; low byte always zero  
-	INY 
-	JSR PARSE_HEX 
-	CPY YSAV 
-	RTS 
-
-;---------------------------
-; set bytes count 
-; for flash r/w 
-;--------------------------
-SET_COUNT:
-; save byte count in ACC 
-	STZ ACCH 
-	LDA LIMH  
-	BNE @GE256 ; >=256	
-	LDA LIML
-	PHP 
-	BEQ @EXIT 
-@GE256:
-	INC ACCH 
-	LDA #0
-@EXIT: 
-	STA ACCL  
-	PLP 
-	RTS 
-
-;-------------------------
-; increment flash page#
-; decrement range_left 
-;-------------------------
-UPDATE_PARAMS:
-; increment flash page number 
-	INC FLASH_ADR+1
-	BNE @DEC_COUNT 
-	INC FLASH_ADR+2 
-@DEC_COUNT: ; how many left 
-	LDA LIMH 
-	LDX LIML 
-	JSR MINUS_ACC ; bytes stored in ACC 
-	STA LIMH    ; what is left to store 
-	STX LIML   
-	RTS 
-.ENDIF 
-
 ;-----------------------------
 ; store memory range to W25Qxxx
 ; ADR1'W'PG#<CR>
@@ -550,7 +423,7 @@ LOAD_RANGE:
 ZERO_FILL:
 @L00:	 
 	LDA #0
-	STA (STL,x)
+	STA (STL)
 	INC STL 
 	BNE @L01
 	INC STH 

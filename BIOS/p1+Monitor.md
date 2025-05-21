@@ -86,8 +86,30 @@ Une addresse suivie du caractère **:**  et de valeurs numérique ou chaines de 
 0410: 76 6F 75 73 21 00 00 00 00 00 00 00 00 00 00 00  ; vous!           
 #
 ```
+### Exécuter une routine en langage machine.
+La commande **G**o sub permet d'exécuter une sous-routine en langague machine.
+```
+#300:d "hello world!"
+
+#310: A9 3 A2 0 20 43 E4 60
+
+#300.31F
+
+0300: 0D 68 65 6C 6C 6F 20 77 6F 72 6C 64 21 00 83 71  ;  hello world!  q
+0310: A9 03 A2 00 20 43 E4 60 00 00 00 04 02 00 00 00  ;      C `        
+#310G
+
+hello world!
+#G
+
+hello world!
+#
+```
+Dans cet exemple on a inscrit à l'adresse **0x300** la chaine de caractères "\rhello world!" et à l'adresse **0x310** on a inscrit la routine à exécuter.
+l'adresse de la routine suivit de la lettre **G** permet d'exécuter la routine. On peut réexécuter la routine plusieurs fois simplement en entrant la lettre **G** Suivant de la touche **&lt;ENTER&gt;**. 
+
 ### Copîer le contenu d'une plage mémoire 
-la commande **M**  permet de copier une plage vers une destination.
+La commande **M**  permet de copier une plage vers une destination.
 ```
 #400.415M420
 
