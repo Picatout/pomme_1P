@@ -4,6 +4,10 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-05-21
+
+* Corrigé erreur dans la schématique de la carte ![ssd et son](docs/cart_ssd_son.png).
+
 ### 2025-05-20 
 
 * Paufiner le code du Moniteur. 

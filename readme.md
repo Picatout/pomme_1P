@@ -72,7 +72,24 @@ Au final cet ordinateur aura son propre terminal intégré et sera monté dans u
 ![carte mémoire flash](docs/carte-W25Q080DV.png). 
 
 
-[lien vidéo](https://youtube.com/shorts/QT92BZp_K6k?feature=share)
+[lien vidéo montrant la carte](https://youtube.com/shorts/QT92BZp_K6k?feature=share)
+
+
+[début](#top)
+
+### 2025-05-21
+
+Modification de la carte SSD et son. Ajout d'un amplificateur audio et d'un petit haut-parleur sur la carte. LE timer 1 du VIA , i.e. **W65C22** est utilisé pour générer des tonalités en sortie sur PB7. 
+
+![schématique ssd et son](docs/cart_ssd_son.png) 
+
+![carte ssd+son](docs/SSD+son.png) 
+
+Cette carte se branche sur un connecteur qui est relié à toutes les broches E/S du VIA. 
+
+**p1+Monitor version 1.2.2 
+
+[lien vidéo démonstration de la dernière version du moniteur](https://youtu.be/FdeKaAmC1mY)
 
 
 [début](#top)
