@@ -87,7 +87,7 @@ Modification de la carte SSD et son. Ajout d'un amplificateur audio et d'un peti
 
 Cette carte se branche sur un connecteur qui est relié à toutes les broches E/S du VIA. 
 
-**p1+Monitor version 1.2.2 
+**p1+Monitor version 1.2.2** 
 
 [lien vidéo démonstration de la dernière version du moniteur](https://youtu.be/FdeKaAmC1mY)
 
