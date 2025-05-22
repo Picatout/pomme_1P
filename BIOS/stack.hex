@@ -1,0 +1,2 @@
+; display 128 bytes of stack content
+0300: A2 FF BD 00 01 20 D3 E4 20 34 E4 CA 30 F4 60 7B

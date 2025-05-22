@@ -79,17 +79,26 @@
  ;setting timer 1 as square wave generator  
    LDA #(T1_PB7_SQRWAV<<ACR_T1_MODE)
    STA VIA_ACR
+.IF 0
    LDA #F_SOUND 
    TSB FLAGS 
+.ELSE 
+   _SETF F_SOUND 
+.ENDIF 
    .ENDMACRO 
 
 ; disable tone output on VIA 
    .MACRO _TONE_OFF  
  ;using timer 1 as generator  
+.IF 0
    LDA #(T1_PB7_SQRWAV<<ACR_T1_MODE)
    TRB VIA_ACR
    LDA #F_SOUND 
-   TRB FLAGS 
+   TRB FLAGS
+.ELSE 
+    STZ VIA_ACR 
+.ENDIF 
+    _RSTF F_SOUND 
    .ENDMACRO 
 
 ; move 16 bits variable to another variable
@@ -99,3 +108,25 @@
    LDA V2+1 
    STA V1+1
    .ENDMACRO 
+
+
+; set flag in 'flags' variable 
+   .MACRO _SETF flag 
+   .byte $80+flag<<4+7, FLAGS 
+   .ENDMACRO  
+
+; reset flag in 'flags' variable 
+   .MACRO _RSTF flag  
+   .byte flag<<4+7, FLAGS 
+   .ENDMACRO 
+   
+; branch if flag bit set 
+   .MACRO _BFR flag, target  
+   .byte flag<<4+$F, FLAGS,target-(*+1) 
+   .ENDMACRO 
+
+;branch if flag bit set 
+   .MACRO _BFS flag, target 
+   .byte $80+flag<<4+$F, FLAGS, target-(*+1) 
+   .ENDMACRO 
+

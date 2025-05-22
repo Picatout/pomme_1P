@@ -44,9 +44,9 @@
 ; masks to be used with 
 ; AND,OR,TRB,TSB instructions 
 ;----------------------------
-    F_SR_TX=(1<<0) ; SR set to transmit mode when 1 
-    F_TIMER=(1<<1) ; timer active when 1 
-    F_SOUND=(1<<2) ; sound timer active 
+    F_SR_TX=0 ; SR set to transmit mode when 1 
+    F_TIMER=1 ; timer active when 1 
+    F_SOUND=2 ; sound timer active 
 
 	.SEGMENT "DATA"
 ; string pointer for PUTS 
@@ -103,7 +103,8 @@ RESET:
     LDA #<CODE_SIZE 
     STA HEAP_FREE
     LDA #>CODE_SIZE 
-    STA HEAP_FREE+1          
+    STA HEAP_FREE+1 
+    STZ FLAGS         
 ; intialize Status register 
 ; disable iterrupts 
     SEI 
@@ -129,6 +130,7 @@ RESET:
 ; print BIOS information 
     JSR CLS ; clear terminal screen 
     _PUTS BIOS_INFO 
+    JSR BEEP   
     JSR MONITOR       
 DEFAULT_APP:
     JSR RANDOMIZE 
@@ -262,19 +264,28 @@ VIA_INTR:
     INC MSEC+3
 ; decrement timer if enabled     
 @TMR_DECR:   
+.IF 0
     LDA FLAGS 
     AND #F_TIMER 
     BEQ @DEC_SND_TIMER 
+.ELSE 
+    _BFR F_TIMER,@DEC_SND_TIMER ; branch if TIMER flag is reset 
+.ENDIF 
     _DECW TIMER 
     BNE @EXIT 
 ; timeout, reset timer flag
     LDA #F_TIMER 
     TRB FLAGS 
+;    _RSTF F_TIMER
 ;decrement sound timer if enabled     
 @DEC_SND_TIMER: 
+.IF 0  
     LDA FLAGS 
     AND #F_SOUND
-    BEQ @EXIT 
+    BEQ @EXIT
+.ELSE      
+    _BFR F_SOUND,@EXIT ; branch if sound timer is reset 
+.ENDIF 
     _DECW SND_TMR
     BNE @EXIT 
 ; stop sound
@@ -567,7 +578,7 @@ PAUSE:
 ; generate 1KHZ tone for 1 second 
 ;-------------------------------------
     TONE_1KHZ=1843 ; T1 count for PHI2=3.6864Mhz 
-BELL:
+BEEP:
     LDA #<100
     STA SND_TMR
     LDA #>100
