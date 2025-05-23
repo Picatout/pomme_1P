@@ -6,8 +6,13 @@ https://github.com/picatout/pomme-1P
 
 ### 2025-05-22
 
+* débuter travail sur [forth.s](BIOS/forth.s).
+
 * Création de macros qui prennent avantage des instructions du W65C02. Modification du code pour utiliser les macros.
-  
+  * BBRx, branch bit reset 
+  * BBSx, branch bit set 
+  * RMBx, reset memory bit 
+  * SMBx, set memory bit  
 
 ### 2025-05-21
 

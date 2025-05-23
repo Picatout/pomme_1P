@@ -82,8 +82,6 @@ PAD: .RES PAD_SIZE
 	.CODE  
     .ORG $E000 
 
-    .include "stack.s" 
-
 ; BIOS code here 
 
 ;-----------------------------
@@ -905,6 +903,12 @@ PRT_HEX:
 @PRT:
     JSR PUTC 
     RTS 
+
+;------------------------------
+;  int16 FORTH 
+;------------------------------
+    .include "forth.s" 
+    
 
 ;--------------------------------
 ;  BIOS function call dispatcher 
