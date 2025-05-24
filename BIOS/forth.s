@@ -13,10 +13,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 SP_BASE=$80 ; argument stack range $80..$FF 
 SP_EMPTY=0 ; Y value when stack is empty   
-TOPL=SP_BASE 
-TOPH=SP_BASE+1 
-NEXTL=SP_BASE+2 
-NEXTH=SP_BASE+3 
+; offset relative to Y 
+TOPL=SP_BASE    ; top cell low byte 
+TOPH=SP_BASE+1  ; top cell high byte 
+NEXTL=SP_BASE+2 ; second cell low byte 
+NEXTH=SP_BASE+3 ; seconde cell high byte 
 
 ; dictionary HEADER 
     .MACRO _HEADER NLEN, NAME, LBL 

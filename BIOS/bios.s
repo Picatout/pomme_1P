@@ -92,6 +92,14 @@ RESET:
 ; initialize stack pointer     
     LDX #$FF ;parameter stack empty 
     TXS      ; hardware stack empty 
+CLR_STACK: 
+    STZ $100,X 
+    DEX
+    BNE CLR_STACK 
+CLR_ARG_STACK:
+    STZ $80,X 
+    INX
+    BNE CLR_ARG_STACK 
 ; set heap address  
     LDA #<PROG_LOAD 
     STA HEAP_ADR 

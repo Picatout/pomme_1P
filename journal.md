@@ -4,6 +4,10 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-05-23
+
+* Modifié routinte **RESET** pour mettre à zéro les 2 piles.
+
 ### 2025-05-22
 
 * débuter travail sur [forth.s](BIOS/forth.s).
