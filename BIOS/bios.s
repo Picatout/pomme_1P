@@ -66,7 +66,9 @@ RX_HEAD: .res 1  ; ACIA RX queue head pointer
 RX_TAIL: .res 1  ; ACIA RX queue tail pointer 
 STR_PTR: .res 2  ; pointer to string printed by PUTS 
 RX_BUFF: .RES RX_BUFF_SIZE  
-ACC16: .res 2 ; 16 bits accumulator 
+AX: .res 2 ; 16 bits accumulator A 
+BX:  .res 2 ; 16 bits accumulator B  
+CX: .res 2 ; 16 bits accumulator C 
 ZP_FREE: .res 0  ; zero page free space *..$BF  
 
 
@@ -913,9 +915,69 @@ PRT_HEX:
     RTS 
 
 ;------------------------------
+; PRT_INT
+; print integer in decimal base 
+; input:
+;   A:X   integer to print 
+;------------------------------
+PRT_INT:
+    PHY 
+    LDY #6
+; build string in PAD 
+    STZ PAD+7  
+    PHA ; keept for sign 
+    STA AX+1 
+    STX AX
+    ASL 
+    BCC @SET_DIV ; I>=0  
+; two's complement integer 
+    LDA #$FF
+    EOR AX
+    STA AX 
+    LDA #$FF 
+    EOR AX+1
+    STA AX+1
+    INC AX 
+    BNE @MOD 
+    INC AX+1 
+@SET_DIV: ; divisor in BX 
+    LDA #10 
+    STA BX
+    STZ BX+1 
+@MOD: ; build string by successive modulo 10 division      
+    JSR UDIV16
+    LDA CX 
+    CLC 
+    ADC #'0'
+    STA PAD,Y 
+    DEY 
+    LDA AX   
+    ORA AX+1 
+    BNE @MOD 
+@PRINT:
+    PLA 
+    BPL :+
+    LDA #'-' 
+    STA PAD,Y
+    DEY  
+:
+    INY 
+    TYA 
+    CLC 
+    ADC #<PAD 
+    TAX 
+    LDA #>PAD
+    JSR PUTS
+    PLY 
+    RTS  
+
+
+    .include "math16.s" 
+
+;------------------------------
 ;  int16 FORTH 
 ;------------------------------
-    .include "forth.s" 
+;    .include "forth.s" 
     
 
 ;--------------------------------

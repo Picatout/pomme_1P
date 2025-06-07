@@ -4,6 +4,13 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-06-06 
+
+* Création de [math16.s](BIOS/math16.s)
+
+* Ajout des routines **PRT_INT** et **UDIV16** dans [bios.s](BIOS/bios.s).
+
+
 ### 2025-05-23
 
 * Modifié routinte **RESET** pour mettre à zéro les 2 piles.
