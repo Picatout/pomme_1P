@@ -50,30 +50,6 @@
       TSB VIA_ACR 
    .ENDMACRO 
 
-   ; decrement 16 bits variable  
-   .MACRO _DECW V16  
-      SEC     
-      LDA V16
-      SBC #1
-      STA V16  
-      LDA V16+1
-      SBC #0
-      STA V16+1
-      ORA V16 ; to set Z flag if V16==0
-   .ENDMACRO 
-
-; increment 16 bits variable 
-   .MACRO _INCW V16 
-      CLC 
-      LDA V16 
-      ADC #1
-      STA V16 
-      LDA V16+1 
-      ADC #0 
-      STA V16+1 
-      ORA V16 ; to set Z flag if V16==0
-   .ENDMACRO 
-
 ; enable tone output on VIA 
    .MACRO _TONE_ON  
  ;setting timer 1 as square wave generator  
@@ -99,14 +75,6 @@
     STZ VIA_ACR 
 .ENDIF 
     _RSTF F_SOUND 
-   .ENDMACRO 
-
-; move 16 bits variable to another variable
-   .MACRO _MOVW V1, V2 
-   LDA V2 
-   STA V1 
-   LDA V2+1 
-   STA V1+1
    .ENDMACRO 
 
 

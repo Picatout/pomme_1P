@@ -21,6 +21,7 @@ FITF=5 ; which interface to use, 0 parallel, 1 serial
 	.include "inc/ascii.inc"
 	.include "inc/gen_macros.inc" 
 	.include "app_macros.inc" 
+    .include "math16.inc"
 
 ;UART=UART3 
 

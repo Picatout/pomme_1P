@@ -4,6 +4,10 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-06-07 
+
+* Travail sur [math16.s](BIOS/math16.s)
+
 ### 2025-06-06 
 
 * Création de [math16.s](BIOS/math16.s)

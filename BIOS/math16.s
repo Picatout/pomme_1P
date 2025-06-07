@@ -65,39 +65,21 @@ DECR:
 MULT:
     LDA AX 
     EOR BX 
-    STA CX  ; product sign 
-; if one operand is zero then product is zero  
-    LDA AX 
-    ORA AX+1
-    BEQ @EXIT 
-    LDA BX 
-    ORA BX+1
-    BEQ @EXIT 
+    PHA  ; product sign 
 ; make both integers positive 
-    LDA AX 
-    BPL @TBX 
-    EOR #$FF 
-    STA AX 
-    LDA AX+1
-    EOR #$FF 
-    STA AX+1 
-    INC AX 
-    BNE @TBX 
-    INC AX+1
-@TBX: 
-    LDA BX 
-    PBL @PROD 
-    EOR #$FF 
-    STA BX 
+    LDA AX+1 
+    BPL :+
+    _NEG_VAR AX 
+: 
     LDA BX+1 
-    EOR #$FF 
-    STA BX+1
-    INC BX 
-    BNE @PROD 
-    INC BX+1
-@PROD:
-    JSR UPROD16 
-@EXIT: 
+    BPL :+
+    _NEG_VAR BX 
+:
+    JSR UPROD16 ; unsigned product 
+    PLA ; get sign 
+    BPL :+
+    _NEG_VAR AX 
+: 
     RTS 
 
 ;---------------------
@@ -106,24 +88,83 @@ MULT:
 ;--------------------
 UPROD16:
     PHY 
-    LDY #16 
-    
+    LDY #16
+; initialize product variable to 0      
+    STZ CX 
+    STZ CX+1
+; if one operand is zero then product is zero  
+    LDA AX 
+    ORA AX+1
+    BEQ @EXIT 
+    LDA BX 
+    ORA BX+1
+    BEQ @EXIT 
+@LOOP: ; for each bit set in BX add AX to CX 
+    LSR BX+1
+    ROR BX 
+    BCC @SHIFT_AX 
+; if BX LSB==1 then add AX TO CX 
+; CX=CX+AX 
+    CLC 
+    LDA AX 
+    ADC CX 
+    STA CX 
+    LDA AX+1 
+    ADC CX+1 
+    STA CX+1
+    BCS @OVF  ; product overflow    
+@SHIFT_AX: ; shift left AX for next addition to CX 
+    ASL AX 
+    ROL AX+1
+    BCS @OVF  ; product overflow 
+    DEY 
+    BNE @LOOP
+@EXIT:
+    _MOVW AX,CX       
     PLY 
     RTS 
+@OVF: ; overflow 
+    STZ CX 
+    LDA #$80 
+    STA CX+1     
+    BRA @EXIT 
 
 
-;---------------------
+;-------------------------------
 ; AX=AX/BX 
-;---------------------
+; NOTE: This not euclidiean division  
+; as quotient and remainder are not 
+; corrected when quotient and divisor are 
+; opposite sign. For more information see  
+; ref: https://en.wikipedia.org/wiki/Euclidean_division  
+;--------------------------------
 DIV:
-
+; must keep sign of quotient and divisor 
+    LDA AX+1 
+    EOR BX+1 
+    PHA  ;  quotient sign 
+    EOR BX+1 
+    BPL :+
+    _NEG_VAR AX 
+: 
+    LDA BX+1 
+    BPL :+
+    _NEG_VAR BX 
+:
+    JSR UDIV16 ; unsigned division 
+; check quotient sign 
+    PLA  ; quotient sign 
+    BPL :+
+    _NEG_VAR AX ; negative quotient 
+: 
     RTS 
 
 ;-----------------------
 ; AX=AX%BX 
 ;-----------------------
 MOD:
-
+    JSR DIV 
+    _MOVW AX,CX 
     RTS 
 
 ;------------------------
@@ -133,7 +174,7 @@ MOD:
 ;   AX dividend 
 ;   BX divisor 
 ; output:
-;   A:X  quotient
+;   AX  quotient
 ;   CX  remainder   
 ;-----------------------
     DIVIDEND=AX
@@ -184,8 +225,6 @@ UDIV16:
     ROL QUOTIENT
     ROL QUOTIENT+1
 @EXIT:
-    LDA QUOTIENT
-    LDX QUOTIENT+1 
     PLY  
     RTS 
 

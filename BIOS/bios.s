@@ -5,7 +5,9 @@
 	.PC02
 
 	.include "../inc/ascii.inc"
-    .include "macros.inc" 
+    .include "macros.inc"
+    .include "math16.inc"
+     
 
 ;------------------------------------
 ; W65C51 ACIA base address
@@ -69,6 +71,7 @@ RX_BUFF: .RES RX_BUFF_SIZE
 AX: .res 2 ; 16 bits accumulator A 
 BX:  .res 2 ; 16 bits accumulator B  
 CX: .res 2 ; 16 bits accumulator C 
+TMP: .res 2 ; temporary variable 
 ZP_FREE: .res 0  ; zero page free space *..$BF  
 
 
@@ -918,29 +921,19 @@ PRT_HEX:
 ; PRT_INT
 ; print integer in decimal base 
 ; input:
-;   A:X   integer to print 
+;   AX   integer to print 
 ;------------------------------
 PRT_INT:
     PHY 
     LDY #6
 ; build string in PAD 
     STZ PAD+7  
-    PHA ; keept for sign 
-    STA AX+1 
-    STX AX
+    LDA #AX+1
+    PHA ; keep it for sign 
     ASL 
-    BCC @SET_DIV ; I>=0  
-; two's complement integer 
-    LDA #$FF
-    EOR AX
-    STA AX 
-    LDA #$FF 
-    EOR AX+1
-    STA AX+1
-    INC AX 
-    BNE @MOD 
-    INC AX+1 
-@SET_DIV: ; divisor in BX 
+    BCC :+ ; I>=0  
+    _NEG_VAR AX 
+: ; divisor in BX 
     LDA #10 
     STA BX
     STZ BX+1 
