@@ -156,7 +156,7 @@ DEBUG=1
 
     JMP RESET 
 
-BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R0",CR,0	
+BIOS_INFO: .BYTE "pomme I+ BIOS version 1.0R1",CR,0	
 
 
 
@@ -187,13 +187,19 @@ ACIA_INIT:
 ;-----------------------------
 
     FLASH_CS=(1<<0) ; VIA PB0 used as chip select 
+    EEWR_EN=(1<<1)  ; VIA PB1 ussed as eeprom U13 write enable output 
+    EERDY=(1<<2)    ; VIA PB2 used  eeprom pin 1 ready/~busy pin probing 
     MS_DELAY=3680 ; for 1msec delay 
 
 VIA_INIT:
 ; configure PB0 as W25Q080 ~CS output
     LDA #FLASH_CS 
     TSB VIA_DDRB
-    TSB VIA_IORB ; CS0 high 
+    TSB VIA_IORB ; CS0 high
+; configure PB1 as U13_WE use to write EEPROM U13 
+    LDA #EEWR_EN
+    TSB VIA_IORB ; PB1 output to high 
+    TSB VIA_DDRB ; PB1 direction output      
 ; set PB7 as output for square wave 
     LDA #(1<<7)
     TSB VIA_DDRB 

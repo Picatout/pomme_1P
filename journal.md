@@ -4,6 +4,15 @@ Ce document fait parti du projet pomme-1P
 https://github.com/picatout/pomme-1P
 -->
 
+### 2025-06-10 
+
+* Modification de la circuit de l'ordinateur pomme-1+. Cette EEPROM peut-être programmée directement dans le circuit de l'ordinateur.
+  * Ajout d'une EEPROM AT28BV64 dans le socket **U13**.
+  * Utilisation du bit PB1 du VIA pour activer le **WRITE_ENABLE** de **U13**
+  * Utilisation du bit PB2 du VIA pour lire l'état de la pin **1** de **U13** qui est a **0** lorsqu'une programmation est en cours.
+* BIOS version 1.0R1
+* p1+Monitor version 1.3R0.
+
 ### 2025-06-07 
 
 * Travail sur [math16.s](BIOS/math16.s)

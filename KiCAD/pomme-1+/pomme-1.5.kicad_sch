@@ -4474,7 +4474,7 @@
 		)
 		(uuid "0309eaa7-ed55-4f6a-9c81-9e3796c6ff77")
 	)
-	(text "pomme 1+\nprocessor board\nV1.8"
+	(text "pomme 1+\nprocessor board\nV1.9"
 		(exclude_from_sim no)
 		(at 179.07 173.99 0)
 		(effects

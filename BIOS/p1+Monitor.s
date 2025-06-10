@@ -41,7 +41,7 @@
 
     .SEGMENT "MONITOR" 
     .ORG $FC00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.2R2",CR,0
+MON_INFO: .BYTE "pomme 1+ monitor version 1.3R0",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
@@ -205,14 +205,16 @@ STORE_STRING:
 	BEQ @EXIT 
 	CMP #'"' 
 	BEQ @STREND
-	STA (STL)
+	STA L 
+	JSR STORE_BYTE 
 	INC STL 
 	BNE STORE_STRING 
 	INC STH 
 	BRA STORE_STRING 
 @STREND:
 	LDA #0
-	STA (STL)
+	STA L 
+	JSR STORE_BYTE 
 	INC STL 
 	BNE @N0 
 	INC STH 
@@ -231,8 +233,7 @@ MODIFY:
 	JSR PARSE_HEX 
 	CPY YSAV 
 	BEQ @TRY_QUOTE  
-	LDA L 
-	STA (STL)
+	JSR STORE_BYTE 
 	INC STL 
 	BNE @LOOP 
 	INC STH 
@@ -245,6 +246,43 @@ MODIFY:
 	BRA @LOOP	  
 @EXIT: 
 	RTS 
+
+;--------------------------
+; check address 
+; if in range $C000...$DFFF 
+; then EEWRITE 
+;--------------------------
+STORE_BYTE:
+	LDA #$C0 
+	CMP STH 
+	BMI @RAM 
+	LDA #$E0 
+	BPL @EXIT ; out of range  
+	BRA EEWRITE 
+@RAM:
+	LDA L 
+	STA (STL)
+@EXIT:	
+	RTS 
+
+;--------------------------
+; write a byte to AT28BV64 
+; EEPROM 
+; addr: $C0000...$DFFF
+; input:
+;    A    byte to write 
+;--------------------------
+EEWRITE:
+	_EEWRITE_ENABLE
+	LDA L  
+	STA (STL)
+	_EEWRITE_DISABLE
+: ; wait programming completion 
+	LDA VIA_IORB
+	AND #EERDY 
+	BEQ :- 
+	RTS 
+
 
 ;-------------------------
 ; display address 

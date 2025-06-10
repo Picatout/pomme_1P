@@ -28,6 +28,18 @@
       TSB VIA_IORB 
     .ENDMACRO 
 
+   ; AT28BV64/U13 write enable 
+   .MACRO _EEWRITE_ENABLE 
+      LDA #EEWR_EN 
+      TRB VIA_IORB 
+   .ENDMACRO
+
+   ; AT28BV64/U13 write disable 
+   .MACRO _EEWRITE_DISABLE 
+      LDA #EEWR_EN 
+      TSB VIA_IORB 
+   .ENDMACRO
+
    ; switch off VIA shift register 
    .MACRO _SWITCH_SR_OFF 
       LDA #SHIFT_MASK 
