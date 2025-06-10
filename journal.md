@@ -6,6 +6,8 @@ https://github.com/picatout/pomme-1P
 
 ### 2025-06-10 
 
+* **MON_V1.3R2** Modifié la boucle d'attente de fin de programmation de **EEWRITE**. La méthode utilisant la broche **1** de l'EEPROM ne fonctionne pas bien. La nouvelle routine utilise la comparaison de du contenu de l'EEPROM avec l'octet écrit. 
+
 * Modifié fonction **MOVE** du moniteur pour que l'opération s'applique aussi à l'EEPROM U13. MON_V1.3R1 
 
 * Modification de la circuit de l'ordinateur pomme-1+. Cette EEPROM peut-être programmée directement dans le circuit de l'ordinateur.

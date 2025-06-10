@@ -41,7 +41,7 @@
 
     .SEGMENT "MONITOR" 
     .ORG $FC00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.3R1",CR,0
+MON_INFO: .BYTE "pomme 1+ monitor version 1.3R2",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
@@ -278,17 +278,29 @@ EEWRITE:
 	STA (STL)
 	_EEWRITE_DISABLE
 ; wait programming completion 
-.IF 0 
+.IF 0
+;------
+; This version of code doesn't work 
+; properly when moving from U13 to U13 
+; but works when moving from RAM to U13 
+; exemple: 
+; 300.31FMC000  OK  
+; C000.C01FMC002 BAD   
+;------
 :
 	LDA VIA_IORB
 	AND #EERDY 
 	BEQ :- 
 .ELSE 
-	LDA L 
-	AND #$80
-	STA L 
+; bit 7 is inverterd 
+; while EEPROM is busy programming byte.
+;--------
+; This version works in both case 
+; exemple: 
+; 300.31FMC000   OK  
+; C000.C01FMC002 OK  
+;--------
 :	LDA (STL)
-	AND #$80 
 	CMP L 
 	BNE :-  
  .ENDIF 
