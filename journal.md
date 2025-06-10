@@ -6,6 +6,8 @@ https://github.com/picatout/pomme-1P
 
 ### 2025-06-10 
 
+* Modifié fonction **MOVE** du moniteur pour que l'opération s'applique aussi à l'EEPROM U13. MON_V1.3R1 
+
 * Modification de la circuit de l'ordinateur pomme-1+. Cette EEPROM peut-être programmée directement dans le circuit de l'ordinateur.
   * Ajout d'une EEPROM AT28BV64 dans le socket **U13**.
   * Utilisation du bit PB1 du VIA pour activer le **WRITE_ENABLE** de **U13**

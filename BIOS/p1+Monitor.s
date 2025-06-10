@@ -41,7 +41,7 @@
 
     .SEGMENT "MONITOR" 
     .ORG $FC00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.3R0",CR,0
+MON_INFO: .BYTE "pomme 1+ monitor version 1.3R1",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
@@ -277,10 +277,21 @@ EEWRITE:
 	LDA L  
 	STA (STL)
 	_EEWRITE_DISABLE
-: ; wait programming completion 
+; wait programming completion 
+.IF 0 
+:
 	LDA VIA_IORB
 	AND #EERDY 
 	BEQ :- 
+.ELSE 
+	LDA L 
+	AND #$80
+	STA L 
+:	LDA (STL)
+	AND #$80 
+	CMP L 
+	BNE :-  
+ .ENDIF 
 	RTS 
 
 
@@ -480,7 +491,8 @@ ZERO_FILL:
 MOVE:
 @LOOP:
 	LDA (XAML)
-	STA (STL)
+	STA L 
+	JSR STORE_BYTE 
 	INC XAML 
 	BNE @INCR_ST 
     INC XAMH
