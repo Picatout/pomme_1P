@@ -26,7 +26,7 @@ J'ai effectué le montage sur 3 cartes de prototypage pleine longueur [Ptsolns](
 
 ### Schématique
 
-Pour l'essentiel la schématique du circuit est complète et peut-être consultée dans le document [docs/pomme_1+_schematic.pdf](docs/pome_1+_schematic.pdf).
+Pour l'essentiel la schématique du circuit est complète et peut-être consultée dans le document [docs/pomme_1+_schematic.pdf](docs/pomme_1+_schematic.pdf).
 
 ### État actuel du projet
 Dans l'état actuel du projet je branche l'ordinateur au PC et utilise l'émulateur de terminal **GTKTerm** configuré à 115200 8N1. Il n'y a qu'un petit programme de [test1.s](p1pMonitor/test1.s) dans l'EEPROM. 
