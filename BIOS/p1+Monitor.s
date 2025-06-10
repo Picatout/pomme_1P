@@ -278,28 +278,8 @@ EEWRITE:
 	STA (STL)
 	_EEWRITE_DISABLE
 ; wait programming completion 
-.IF 0
-;------
-; This version of code doesn't work 
-; properly when moving from U13 to U13 
-; but works when moving from RAM to U13 
-; exemple: 
-; 300.31FMC000  OK  
-; C000.C01FMC002 BAD   
-;------
-:
-	LDA VIA_IORB
-	AND #EERDY 
-	BEQ :- 
-.ELSE 
 ; bit 7 is inverterd 
 ; while EEPROM is busy programming byte.
-;--------
-; This version works in both case 
-; exemple: 
-; 300.31FMC000   OK  
-; C000.C01FMC002 OK  
-;--------
 :	LDA (STL)
 	CMP L 
 	BNE :-  

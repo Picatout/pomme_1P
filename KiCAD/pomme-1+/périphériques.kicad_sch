@@ -6003,12 +6003,6 @@
 		(uuid "96074ffe-f900-4800-bc6d-c4d451bc57c9")
 	)
 	(junction
-		(at 214.63 82.55)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "9e5d7ce4-97ef-4735-8908-971454bd6573")
-	)
-	(junction
 		(at 166.37 91.44)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -6720,16 +6714,6 @@
 			(type default)
 		)
 		(uuid "0fb80a13-094b-402d-a14e-8c3729b541d1")
-	)
-	(wire
-		(pts
-			(xy 207.01 82.55) (xy 212.09 82.55)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "105dd883-1776-4ea9-b3ad-e5bc932963be")
 	)
 	(bus
 		(pts
@@ -7773,16 +7757,6 @@
 	)
 	(wire
 		(pts
-			(xy 212.09 82.55) (xy 214.63 82.55)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "94338843-3185-4403-9615-95350c929f88")
-	)
-	(wire
-		(pts
 			(xy 223.52 31.75) (xy 223.52 33.02)
 		)
 		(stroke
@@ -8671,6 +8645,26 @@
 		)
 		(uuid "04c1ab4f-6898-4d12-9a07-8c87bedf93d9")
 	)
+	(label "PB4"
+		(at 214.63 87.63 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "1685db2d-1e7d-4f40-a960-9d6abc7f46db")
+	)
+	(label "PA3"
+		(at 214.63 64.77 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "2cc196c4-48c9-4277-9164-43e1797be89c")
+	)
 	(label "PB0"
 		(at 214.63 77.47 0)
 		(effects
@@ -8680,6 +8674,26 @@
 			(justify left bottom)
 		)
 		(uuid "3bac2718-a219-4a52-94a9-ca7e103e8107")
+	)
+	(label "PA0"
+		(at 214.63 57.15 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "3d1c7c34-ee6b-48ca-a1c5-7ddfa8ce7272")
+	)
+	(label "PA6"
+		(at 214.63 72.39 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "4385f80c-04e4-4a54-9b0f-1d4f2e3161e6")
 	)
 	(label "A2"
 		(at 241.3 64.77 0)
@@ -8700,6 +8714,16 @@
 			(justify left bottom)
 		)
 		(uuid "52d5258c-a7b5-419f-8ab9-1a7303e72765")
+	)
+	(label "PA5"
+		(at 214.63 69.85 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "53ed74fd-69e9-4e72-a8a0-f53c8838963b")
 	)
 	(label "PA0"
 		(at 180.34 33.02 180)
@@ -8741,6 +8765,46 @@
 		)
 		(uuid "632d135c-268b-420f-bb80-120580080fc4")
 	)
+	(label "PB3"
+		(at 214.63 85.09 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "9d3be762-8e26-477a-bdb2-39f58a17d40c")
+	)
+	(label "PA2"
+		(at 214.63 62.23 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "b74b2fd7-dc64-407b-a43e-bfc4b1349eaa")
+	)
+	(label "PB6"
+		(at 214.63 92.71 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "c597b4f2-5370-40fc-bea8-950023d07023")
+	)
+	(label "PA7"
+		(at 214.63 74.93 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "c7286070-7c73-444b-b7cc-85743714ccba")
+	)
 	(label "PB7"
 		(at 218.44 33.02 180)
 		(effects
@@ -8750,6 +8814,26 @@
 			(justify right bottom)
 		)
 		(uuid "d1847577-5100-4bb7-a643-fd6e67113147")
+	)
+	(label "PB5"
+		(at 214.63 90.17 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "d1db437d-55ef-4ca3-8213-4bbffd99d64d")
+	)
+	(label "PA4"
+		(at 214.63 67.31 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "d85dfb6f-4fa6-4449-8ece-48792643dff0")
 	)
 	(label "PA7"
 		(at 198.12 33.02 180)
@@ -8780,6 +8864,16 @@
 			(justify left bottom)
 		)
 		(uuid "f43ecce1-7d81-4f48-8ad0-6ca5a76c0bf3")
+	)
+	(label "PA1"
+		(at 214.63 59.69 0)
+		(effects
+			(font
+				(size 1.016 1.016)
+			)
+			(justify left bottom)
+		)
+		(uuid "f5e4ae7e-9657-4c3c-aca4-890b3c5898bd")
 	)
 	(global_label "TXD"
 		(shape input)
@@ -9828,28 +9922,6 @@
 		(uuid "b5e88262-1342-4e19-896f-3f38f9bf51a4")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 228.6 39.1514 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-				(hide yes)
-			)
-		)
-	)
-	(global_label "U13_~{BUSY}"
-		(shape input)
-		(at 207.01 82.55 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "b8813d4a-63ed-4065-9e1d-3a5e5be8f7fa")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 194.4091 82.55 0)
 			(effects
 				(font
 					(size 1.27 1.27)
