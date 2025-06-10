@@ -197,7 +197,7 @@ Dans cette exemple on a initialiser la plage 400.41C avec la chaine "hello world
 #
 ```
 ## Sauvagarder et restaurer dans la mémoire FLASH 
-Le pomme I+ possède une mémoire FLASH de 16Mo **W25Q128**  qui sert de SSD pour l'ordinateur. Il est possible de sauvegarder une plages mémoire dans celle-ci et de la recharger dans la RAM de l'ordinaeur.
+Le pomme I+ possède une mémoire FLASH de 16Mo **W25Q128**  qui sert de SSD pour l'ordinateur. Il est possible de sauvegarder une plage mémoire dans celle-ci et de la recharger dans la RAM de l'ordinaeur. Cette plage doit-être un multiple de 256 octets.
 
 ### Sauvegarde une plage 
 La sauvegarde se fait par plage de 256 octets car pour la programmation le W25Q128 n'accepte que 256 octets par étape. La commande **W** est effectuée 
@@ -205,63 +205,116 @@ pour cette opération.
 
 On va d'abord initialiser une plage mémoire avec un patron facilement reconnaissable.
 ```
-#400: "HELLO WORLD!"           
+#300: "The quick brown fox jump over the lazy dog."          
 
-#400.40F
+#32B.3FFZ
 
-0400: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-#400.4FFM410
+#400: "Le renard rapide saute par dessus le chien paresseux."
 
-#400.4FF
+#438.4FFZ
 
-0400: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0410: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0420: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0430: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0440: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0450: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0460: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0470: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0480: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0490: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-04A0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-04B0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-04C0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-04D0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-04E0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-04F0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
+#300.4FFW0 
+
+#300.4FFZ  
+
+```
+
+Examinons cette plage mémoire avant de la sauvegardée sur le SSD.
+```
+0300: 54 68 65 20 71 75 69 63 6B 20 62 72 6F 77 6E 20  ; The quick brown 
+0310: 66 6F 78 20 6A 75 6D 70 20 6F 76 65 72 20 74 68  ; fox jump over th
+0320: 65 20 6C 61 7A 79 20 64 6F 67 2E 00 00 00 00 00  ; e lazy dog.     
+0330: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0340: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0350: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0360: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0370: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0390: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+03A0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+03B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+03C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+03D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+03E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+03F0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0400: 4C 65 20 72 65 6E 61 72 64 20 72 61 70 69 64 65  ; Le renard rapide
+0410: 20 73 61 75 74 65 20 70 61 72 20 64 65 73 73 75  ;  saute par dessu
+0420: 73 20 6C 65 20 63 68 69 65 6E 20 70 61 72 65 73  ; s le chien pares
+0430: 73 65 75 78 2E 00 00 00 00 00 00 00 00 00 00 00  ; seux.           
+0440: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0450: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0460: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0470: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0480: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0490: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+04A0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+04B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+04C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+04D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+04E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+04F0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
 #
 ```
-On va sauvegarder cette plage de 256 octets à la page 0x10  de la W25Q128 
+
+On va sauvegarder cette plage de 512 octets à la page 0  de la W25Q128 
 ```
-#400.4FFW10
+#300.4FFW0
 
 #
 ```
-On va recharger cette page à l'adresse 0x600 avec la commande **R**EAD.
+On va recharger cette page à l'adresse 0x500 avec la commande **R**EAD.
 ```
-#600R10
+#500.6FFR0
+```
+Maintenant on va regarché ses 512 octets dans la plage 500.6FF et vérifier que le chargement est identuique à la plaque sauvegardée sur le SSD. 
+```
+#500.6FFR0
 
-#600.6FF
+#300.4FFV500
 
-0600: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0610: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0620: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0630: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0640: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0650: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0660: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0670: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0680: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-0690: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-06A0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-06B0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-06C0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-06D0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-06E0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
-06F0: 48 45 4C 4C 4F 20 57 4F 52 4C 44 21 00 21 21 21  ; HELLO WORLD! !!!
 #
 ```
+
+Il n'y a pas de différences d'affichées donc c'est correct. Affichons la plage pour voir son contenu.
+```
+#500.6FF
+
+0500: 54 68 65 20 71 75 69 63 6B 20 62 72 6F 77 6E 20  ; The quick brown 
+0510: 66 6F 78 20 6A 75 6D 70 20 6F 76 65 72 20 74 68  ; fox jump over th
+0520: 65 20 6C 61 7A 79 20 64 6F 67 2E 00 00 00 00 00  ; e lazy dog.     
+0530: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0540: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0550: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0560: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0570: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0580: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0590: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+05A0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+05B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+05C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+05D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+05E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+05F0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0600: 4C 65 20 72 65 6E 61 72 64 20 72 61 70 69 64 65  ; Le renard rapide
+0610: 20 73 61 75 74 65 20 70 61 72 20 64 65 73 73 75  ;  saute par dessu
+0620: 73 20 6C 65 20 63 68 69 65 6E 20 70 61 72 65 73  ; s le chien pares
+0630: 73 65 75 78 2E 00 00 00 00 00 00 00 00 00 00 00  ; seux.           
+0640: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0650: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0660: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0670: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0680: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+0690: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+06A0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+06B0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+06C0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+06D0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+06E0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+06F0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ;                 
+#
+
+```
+
 ### Vérifier le contenu.
 Dans l'exemple précédent il est facile de vérifier que l'opération s'est effectuée correctement, mais s'il s'agissait de code binaire ce ne serait pas si simple. La commande **V**erify  peut le faire pour nous.
 ```

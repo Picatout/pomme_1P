@@ -41,7 +41,7 @@
 
     .SEGMENT "MONITOR" 
     .ORG $FC00 
-MON_INFO: .BYTE "pomme 1+ monitor version 1.3R2",CR,0
+MON_INFO: .BYTE "pomme 1+ monitor version 1.3R3",CR,0
 
 MONITOR:
 	_PUTS MON_INFO
@@ -97,14 +97,15 @@ VALID_CMD: ; check if character is in command list
 @T10: 
 	LDA MODE 
 	BEQ @T11 
-	CMP #9
+	CMP #9 
 	BEQ @T12
+; 3th parameter , address or else 
 	LDA L 
 	STA STL 
 	LDA H 
 	STA STH  
 	BRA NEXTITEM
-@T11: 
+@T11: ; first address 
 	LDA L 
 	STA XAML
 	STA STL
@@ -112,7 +113,7 @@ VALID_CMD: ; check if character is in command list
 	STA XAMH 
 	STA STH
 	JMP NEXTITEM 
-@T12:
+@T12: ; adress after '.', range limit 
 	LDA L 
 	STA LIML 
 	LDA H 
@@ -125,7 +126,8 @@ CMD_EXEC:
 	DEX  
 	BNE @SKIP
 	DEC A 
-@SKIP:
+@SKIP: 
+; jump to command 
 	PHA 
 	PHX 
 	LDA MODE 
@@ -283,7 +285,6 @@ EEWRITE:
 :	LDA (STL)
 	CMP L 
 	BNE :-  
- .ENDIF 
 	RTS 
 
 
@@ -423,36 +424,57 @@ CONFIRM: .BYTE "CONFIRM FLASH ERASE(Y/N)",CR,0
 
 ;-----------------------------
 ; store memory range to W25Qxxx
-; ADR1'W'PG#<CR>
-; XAM -> buffer address 
-; ST -> W25QXXX page#
+; write multiple of 256 bytes 
+; ADR1.ADR2'W'PG#<CR>
+; ADR1 -> XAM , start address 
+; ADR2 -> LIM , last address 
+; PG# -> ST, W25QXXX page#
 ;-----------------------------
 STORE_RANGE:
 ; copy XAM to FLASH_BUFF 
    _MOVW FLASH_BUFF, XAML 
-   STZ FLASH_ADR
+   STZ FLASH_ADR ; low byte always 0 
    _MOVW FLASH_ADR+1,STL
-   LDA #0 
+@LOOP:
+   LDA #0 ; count of bytes to write 0=256 
    JSR FLASH_WRITE  
+   INC FLASH_BUFF+1 ; next source page  	
+   INC FLASH_ADR+1 ; next ssd page 
+   BNE :+
+   INC FLASH_ADR+2
+: ; compare with limit 
+   LDA LIMH 
+   CMP FLASH_BUFF+1
+   BPL @LOOP	
    RTS 
+
 
 ;------------------------------
 ; load range from W25Q080  
 ; from W25Q080 
-; ADR1'R'PG# 
-; XAM -> buffer address 
-; ST -> W25Q080 page#
+; range must be 256 bytes multiple
+; ADR1.ADR2'R'PG# 
+; ADR1 -> XAM , load address 
+; ADR2 -> LIM , last addr 
+; PG# -> ST , W25Q080 page#
 ;-----------------------------
 LOAD_RANGE:
 ; copy XAM to FLASH_BUFF 
    _MOVW FLASH_BUFF, XAML 
-   STZ FLASH_ADR 
-   INY 
-   JSR PARSE_HEX
-   BEQ @EXIT
+   STZ FLASH_ADR ; low byte always 0
    _MOVW FLASH_ADR+1,STL
+@LOOP:
    LDA #0 
    JSR FLASH_READ 
+   INC FLASH_BUFF+1 ; next load page 
+   INC FLASH_ADR+1 ; next ssd page
+   BNE :+
+   INC FLASH_ADR+2  
+: 
+;  compare FLASH_BUFF+1 with LIMH
+   LDA LIMH 
+   CMP FLASH_BUFF+1
+   BPL @LOOP 
 @EXIT:
    RTS 
 
@@ -464,7 +486,8 @@ LOAD_RANGE:
 ZERO_FILL:
 @L00:	 
 	LDA #0
-	STA (STL)
+	STA L 
+	JSR STORE_BYTE 
 	INC STL 
 	BNE @L01
 	INC STH 

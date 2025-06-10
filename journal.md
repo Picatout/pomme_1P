@@ -6,6 +6,10 @@ https://github.com/picatout/pomme-1P
 
 ### 2025-06-10 
 
+* Modification de **LOAD_RANGE** et **STORE_RANGE** pour accepter plusieurs page de 256 octets.
+
+* Modification de la commande **ZERO_FILL** du moniteur pour permettre l'opération dans l'EEPROM U13.
+
 * Modification au circuit pour enlevé le polling sur pin **1** de l'EEPROM **U13** puisque ça ne fonctionne pas correctement. 
 
 * **MON_V1.3R2** Modifié la boucle d'attente de fin de programmation de **EEWRITE**. La méthode utilisant la broche **1** de l'EEPROM ne fonctionne pas bien. La nouvelle routine utilise la comparaison de du contenu de l'EEPROM avec l'octet écrit. 

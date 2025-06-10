@@ -188,7 +188,6 @@ ACIA_INIT:
 
     FLASH_CS=(1<<0) ; VIA PB0 used as chip select 
     EEWR_EN=(1<<1)  ; VIA PB1 ussed as eeprom U13 write enable output 
-    EERDY=(1<<2)    ; VIA PB2 used  eeprom pin 1 ready/~busy pin probing 
     MS_DELAY=3680 ; for 1msec delay 
 
 VIA_INIT:
